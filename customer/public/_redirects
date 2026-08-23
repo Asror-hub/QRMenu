@@ -1,2 +1,0 @@
-# SPA routes are handled in wrangler.json (not_found_handling).
-# Do not add a /* /index.html 200 rule here — Workers treats it as a loop.
