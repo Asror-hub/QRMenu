@@ -35,6 +35,8 @@ create table if not exists tables (
   restaurant_id uuid references restaurants (id),
   table_number integer not null,
   table_name text,
+  map_x numeric,
+  map_y numeric,
   created_at timestamp with time zone default now()
 );
 
@@ -55,7 +57,8 @@ create table if not exists menu_items (
   price numeric not null,
   image_url text,
   image_public_id text,
-  available boolean default true
+  available boolean default true,
+  sold_out boolean default false
 );
 
 create table if not exists orders (
@@ -66,7 +69,9 @@ create table if not exists orders (
   comment text,
   order_number integer not null default (floor(random() * 900) + 100),
   status text check (status in ('pending', 'accepted', 'ready', 'finish')) not null,
-  created_at timestamp with time zone default now()
+  source text,
+  created_at timestamp with time zone default now(),
+  archived_at timestamp with time zone
 );
 
 create index if not exists idx_tables_restaurant_id on tables (restaurant_id);

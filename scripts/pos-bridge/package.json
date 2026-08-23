@@ -1,0 +1,15 @@
+{
+  "name": "qrmenu-pos-bridge",
+  "version": "1.0.0",
+  "description": "Receives QRMenu order webhooks and prints to thermal printer",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "run": "node server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.0",
+    "escpos": "^3.0.0-alpha.6",
+    "escpos-network": "^3.0.0-alpha.5"
+  }
+}

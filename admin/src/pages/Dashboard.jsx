@@ -2,29 +2,47 @@ import { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 import { supabase } from "../services/supabase";
 import { useRestaurant } from "../context/RestaurantContext";
+import { useLanguage } from "../context/LanguageContext";
+import { formatCurrency } from "../utils/currency";
+import { cardItem, cardPanel } from "../styles/cards";
+
+const getTooltipEdge = (index, total) =>
+  index >= total - 2 ? "end" : index <= 1 ? "start" : "center";
 
 const Dashboard = () => {
   const { restaurant } = useRestaurant();
+  const { t, locale } = useLanguage();
   const [stats, setStats] = useState({
     categories: 0,
     menuItems: 0,
     tables: 0,
     orders: 0
   });
-  const [chartSeries, setChartSeries] = useState({
+  const [revenueChartSeries, setRevenueChartSeries] = useState({
     labels: [],
     orders: [],
     revenue: []
   });
-  const [dateRange, setDateRange] = useState(() => {
-    const today = new Date();
-    const start = new Date(today);
-    start.setDate(today.getDate() - 6);
-    return {
-      start: start.toISOString().slice(0, 10),
-      end: today.toISOString().slice(0, 10)
-    };
+  const [ordersChartSeries, setOrdersChartSeries] = useState({
+    labels: [],
+    orders: [],
+    revenue: []
   });
+  const [bestSellingItems, setBestSellingItems] = useState([]);
+  const [weekOffset, setWeekOffset] = useState(0);
+
+  const getWeekRange = (offsetWeeks = 0) => {
+    const base = new Date();
+    base.setHours(0, 0, 0, 0);
+    base.setDate(base.getDate() + offsetWeeks * 7);
+    const day = base.getDay();
+    const mondayDiff = day === 0 ? -6 : 1 - day;
+    const start = new Date(base);
+    start.setDate(base.getDate() + mondayDiff);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    return { start, end };
+  };
 
   useEffect(() => {
     const loadStats = async () => {
@@ -48,7 +66,7 @@ const Dashboard = () => {
     loadStats();
   }, [restaurant]);
 
-  const formatCurrency = (value) => `$${value.toFixed(2)}`;
+  const currency = restaurant?.currency ?? "USD";
 
   const formatDateKey = (value) => {
     const date = new Date(value);
@@ -58,184 +76,161 @@ const Dashboard = () => {
     return `${year}-${month}-${day}`;
   };
 
+  const loadChartData = async (range, setChartSeries) => {
+    if (!restaurant?.id) return;
+    const startDate = new Date(range.start);
+    const endDate = new Date(range.end);
+    if (Number.isNaN(startDate.valueOf()) || Number.isNaN(endDate.valueOf())) return;
+
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(23, 59, 59, 999);
+
+    const { data } = await supabase
+      .from("orders")
+      .select("created_at, items")
+      .eq("restaurant_id", restaurant.id)
+      .gte("created_at", startDate.toISOString())
+      .lte("created_at", endDate.toISOString());
+
+    const dateKeys = [];
+    const cursor = new Date(startDate);
+    while (cursor <= endDate) {
+      dateKeys.push(formatDateKey(cursor));
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    const ordersMap = Object.fromEntries(dateKeys.map((key) => [key, 0]));
+    const revenueMap = Object.fromEntries(dateKeys.map((key) => [key, 0]));
+
+    (data ?? []).forEach((order) => {
+      const key = formatDateKey(order.created_at);
+      if (!(key in ordersMap)) ordersMap[key] = 0;
+      if (!(key in revenueMap)) revenueMap[key] = 0;
+      ordersMap[key] += 1;
+      const items = Array.isArray(order.items) ? order.items : [];
+      const total = items.reduce(
+        (sum, item) =>
+          sum + Number(item.price || 0) * Number(item.quantity || 0),
+        0
+      );
+      revenueMap[key] += total;
+    });
+
+    setChartSeries({
+      labels: dateKeys.map((key) => {
+        const date = new Date(`${key}T00:00:00`);
+        return date.toLocaleDateString(locale, { month: "short", day: "numeric" });
+      }),
+      orders: dateKeys.map((key) => ordersMap[key] || 0),
+      revenue: dateKeys.map((key) => revenueMap[key] || 0)
+    });
+  };
+
   useEffect(() => {
-    const loadSeries = async () => {
+    const range = getWeekRange(weekOffset);
+    loadChartData(range, setRevenueChartSeries);
+  }, [restaurant, weekOffset, locale]);
+
+  useEffect(() => {
+    const range = getWeekRange(weekOffset);
+    loadChartData(range, setOrdersChartSeries);
+  }, [restaurant, weekOffset, locale]);
+
+  useEffect(() => {
+    const loadBestSellingItems = async () => {
       if (!restaurant?.id) return;
-      const startDate = new Date(dateRange.start);
-      const endDate = new Date(dateRange.end);
-      if (Number.isNaN(startDate.valueOf()) || Number.isNaN(endDate.valueOf())) return;
-
-      if (startDate > endDate) {
-        const corrected = formatDateKey(startDate);
-        setDateRange((prev) => ({ ...prev, end: corrected }));
-        return;
-      }
-
-      startDate.setHours(0, 0, 0, 0);
+      const endDate = new Date();
       endDate.setHours(23, 59, 59, 999);
+      const startDate = new Date(endDate);
+      startDate.setDate(endDate.getDate() - 29);
+      startDate.setHours(0, 0, 0, 0);
 
       const { data } = await supabase
         .from("orders")
-        .select("created_at, items")
+        .select("items")
         .eq("restaurant_id", restaurant.id)
         .gte("created_at", startDate.toISOString())
         .lte("created_at", endDate.toISOString());
 
-      const dateKeys = [];
-      const cursor = new Date(startDate);
-      while (cursor <= endDate) {
-        dateKeys.push(formatDateKey(cursor));
-        cursor.setDate(cursor.getDate() + 1);
-      }
-
-      const ordersMap = Object.fromEntries(dateKeys.map((key) => [key, 0]));
-      const revenueMap = Object.fromEntries(dateKeys.map((key) => [key, 0]));
-
+      const itemMap = new Map();
       (data ?? []).forEach((order) => {
-        const key = formatDateKey(order.created_at);
-        if (!(key in ordersMap)) ordersMap[key] = 0;
-        if (!(key in revenueMap)) revenueMap[key] = 0;
-        ordersMap[key] += 1;
         const items = Array.isArray(order.items) ? order.items : [];
-        const total = items.reduce(
-          (sum, item) =>
-            sum + Number(item.price || 0) * Number(item.quantity || 0),
-          0
-        );
-        revenueMap[key] += total;
+        items.forEach((item) => {
+          const name = String(item?.name ?? "").trim();
+          if (!name) return;
+          const quantity = Number(item?.quantity || 0);
+          const price = Number(item?.price || 0);
+          const existing = itemMap.get(name) ?? { quantity: 0, revenue: 0 };
+          existing.quantity += quantity;
+          existing.revenue += quantity * price;
+          itemMap.set(name, existing);
+        });
       });
 
-      setChartSeries({
-        labels: dateKeys.map((key) => {
-          const date = new Date(`${key}T00:00:00`);
-          return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-        }),
-        orders: dateKeys.map((key) => ordersMap[key] || 0),
-        revenue: dateKeys.map((key) => revenueMap[key] || 0)
-      });
+      const ranked = Array.from(itemMap.entries())
+        .map(([name, values]) => ({
+          name,
+          quantity: values.quantity,
+          revenue: values.revenue
+        }))
+        .sort((a, b) =>
+          b.quantity === a.quantity ? b.revenue - a.revenue : b.quantity - a.quantity
+        )
+        .slice(0, 8);
+
+      setBestSellingItems(ranked);
     };
 
-    loadSeries();
-  }, [restaurant, dateRange]);
+    loadBestSellingItems();
+  }, [restaurant]);
 
-  const chartMeta = useMemo(() => {
-    if (!chartSeries.labels.length) return "No data";
-    return `${chartSeries.labels[0]} – ${chartSeries.labels[chartSeries.labels.length - 1]}`;
-  }, [chartSeries.labels]);
+  const revenueChartMeta = useMemo(() => {
+    if (!revenueChartSeries.labels.length) return t("noData");
+    return `${revenueChartSeries.labels[0]} – ${revenueChartSeries.labels[revenueChartSeries.labels.length - 1]}`;
+  }, [revenueChartSeries.labels, t]);
+
+  const ordersChartMeta = useMemo(() => {
+    if (!ordersChartSeries.labels.length) return t("noData");
+    return `${ordersChartSeries.labels[0]} – ${ordersChartSeries.labels[ordersChartSeries.labels.length - 1]}`;
+  }, [ordersChartSeries.labels, t]);
 
   const totalRevenue = useMemo(
-    () => chartSeries.revenue.reduce((sum, value) => sum + value, 0),
-    [chartSeries.revenue]
+    () => revenueChartSeries.revenue.reduce((sum, value) => sum + value, 0),
+    [revenueChartSeries.revenue]
   );
 
   const totalOrders = useMemo(
-    () => chartSeries.orders.reduce((sum, value) => sum + value, 0),
-    [chartSeries.orders]
+    () => ordersChartSeries.orders.reduce((sum, value) => sum + value, 0),
+    [ordersChartSeries.orders]
   );
 
-  const chartPoints = useMemo(() => {
-    const width = 180;
-    const height = 80;
-    const padding = 6;
-    const max = Math.max(...chartSeries.revenue, 1);
-    const count = chartSeries.revenue.length;
-    return chartSeries.revenue.map((value, index) => {
-      const x =
-        count === 1
-          ? width / 2
-          : padding + (index * (width - padding * 2)) / (count - 1);
-      const y = height - padding - (value / max) * (height - padding * 2);
-      return { x, y, value, amount: formatCurrency(value) };
-    });
-  }, [chartSeries.revenue]);
-
-  const linePath = useMemo(() => {
-    if (!chartPoints.length) return "";
-    return chartPoints
-      .map((point, index) => `${index === 0 ? "M" : "L"}${point.x} ${point.y}`)
-      .join(" ");
-  }, [chartPoints]);
-
-  const areaPath = useMemo(() => {
-    if (!chartPoints.length) return "";
-    const height = 80;
-    const padding = 6;
-    const last = chartPoints[chartPoints.length - 1];
-    return `${linePath} L${last.x} ${height - padding} L${chartPoints[0].x} ${
-      height - padding
-    } Z`;
-  }, [chartPoints, linePath]);
-
-  const revenueTicks = useMemo(() => {
-    const max = Math.max(...chartSeries.revenue, 0);
-    if (max === 0) return ["$0", "$0", "$0", "$0", "$0"];
-    const step = Math.ceil(max / 4);
-    return [step * 4, step * 3, step * 2, step, 0].map((value) =>
-      formatCurrency(value)
-    );
-  }, [chartSeries.revenue]);
+  const maxRevenue = useMemo(
+    () => Math.max(...revenueChartSeries.revenue, 1),
+    [revenueChartSeries.revenue]
+  );
 
   const maxOrders = useMemo(
-    () => Math.max(...chartSeries.orders, 0),
-    [chartSeries.orders]
+    () => Math.max(...ordersChartSeries.orders, 1),
+    [ordersChartSeries.orders]
   );
 
+  const weekLabel = useMemo(() => {
+    const { start, end } = getWeekRange(weekOffset);
+    const startText = start.toLocaleDateString(locale, { month: "short", day: "numeric" });
+    const endText = end.toLocaleDateString(locale, { month: "short", day: "numeric" });
+    return `${startText} - ${endText}`;
+  }, [weekOffset, locale]);
+
   return (
-    <div>
-      <Header>
-        <div>
-          <Heading>Welcome back</Heading>
-          <Subheading>Here is a quick snapshot of your restaurant activity.</Subheading>
-        </div>
-        <HeaderRight>
-          <DatePicker>
-            <DateField>
-              <label htmlFor="start-date">From</label>
-              <input
-                id="start-date"
-                type="date"
-                value={dateRange.start}
-                onChange={(event) =>
-                  setDateRange((prev) => ({
-                    ...prev,
-                    start: event.target.value,
-                    end:
-                      event.target.value > prev.end ? event.target.value : prev.end
-                  }))
-                }
-              />
-            </DateField>
-            <DateField>
-              <label htmlFor="end-date">To</label>
-              <input
-                id="end-date"
-                type="date"
-                value={dateRange.end}
-                onChange={(event) =>
-                  setDateRange((prev) => ({
-                    ...prev,
-                    end: event.target.value,
-                    start:
-                      event.target.value < prev.start ? event.target.value : prev.start
-                  }))
-                }
-              />
-            </DateField>
-          </DatePicker>
-          <HighlightCard>
-            <HighlightLabel>Range total</HighlightLabel>
-            <HighlightValue>{formatCurrency(totalRevenue)}</HighlightValue>
-            <HighlightMeta>{totalOrders} orders in range</HighlightMeta>
-          </HighlightCard>
-        </HeaderRight>
-      </Header>
+    <Page>
       <Grid>
         <Card $accent="indigo">
           <CardTop>
-            <CardLabel>Categories</CardLabel>
-            <Chip>+2%</Chip>
+            <CardLabel>{t("statsCategories")}</CardLabel>
+            <Chip>CT</Chip>
           </CardTop>
           <CardValue>{stats.categories}</CardValue>
+          <CardSubtext>{t("menuGroupsConfigured")}</CardSubtext>
           <Sparkline>
             <SparklinePath
               d="M2 26 L20 20 L38 22 L56 14 L74 18 L92 10"
@@ -245,10 +240,11 @@ const Dashboard = () => {
         </Card>
         <Card $accent="sky">
           <CardTop>
-            <CardLabel>Menu Items</CardLabel>
-            <Chip>+5%</Chip>
+            <CardLabel>{t("statsMenuItems")}</CardLabel>
+            <Chip>MI</Chip>
           </CardTop>
           <CardValue>{stats.menuItems}</CardValue>
+          <CardSubtext>{t("itemsCurrentlyActive")}</CardSubtext>
           <Sparkline>
             <SparklinePath
               d="M2 24 L20 26 L38 18 L56 16 L74 22 L92 12"
@@ -258,10 +254,11 @@ const Dashboard = () => {
         </Card>
         <Card $accent="emerald">
           <CardTop>
-            <CardLabel>Tables</CardLabel>
-            <Chip>Stable</Chip>
+            <CardLabel>{t("statsTables")}</CardLabel>
+            <Chip>TB</Chip>
           </CardTop>
           <CardValue>{stats.tables}</CardValue>
+          <CardSubtext>{t("diningTablesAvailable")}</CardSubtext>
           <Sparkline>
             <SparklinePath
               d="M2 22 L20 20 L38 20 L56 20 L74 20 L92 20"
@@ -271,10 +268,11 @@ const Dashboard = () => {
         </Card>
         <Card $accent="rose">
           <CardTop>
-            <CardLabel>Total Orders</CardLabel>
-            <Chip>+12%</Chip>
+            <CardLabel>{t("statsTotalOrders")}</CardLabel>
+            <Chip>OR</Chip>
           </CardTop>
           <CardValue>{stats.orders}</CardValue>
+          <CardSubtext>{t("allTimeOrderVolume")}</CardSubtext>
           <Sparkline>
             <SparklinePath
               d="M2 28 L20 24 L38 22 L56 16 L74 10 L92 6"
@@ -286,138 +284,178 @@ const Dashboard = () => {
       <Charts>
         <ChartCard>
           <ChartHeader>
-            <ChartTitle>Revenue trend</ChartTitle>
-            <ChartMeta>{chartMeta}</ChartMeta>
+            <ChartTitle>{t("revenueByDay")}</ChartTitle>
+            <ChartHeaderRight>
+              <WeekNavigator>
+                <WeekArrowButton
+                  type="button"
+                  onClick={() => setWeekOffset((prev) => prev - 1)}
+                  aria-label={t("previousWeek")}
+                >
+                  <span aria-hidden="true">◀</span>
+                </WeekArrowButton>
+                <WeekLabel>{weekLabel}</WeekLabel>
+                <WeekArrowButton
+                  type="button"
+                  onClick={() => setWeekOffset((prev) => Math.min(prev + 1, 0))}
+                  aria-label={t("nextWeek")}
+                  disabled={weekOffset === 0}
+                >
+                  <span aria-hidden="true">▶</span>
+                </WeekArrowButton>
+              </WeekNavigator>
+            </ChartHeaderRight>
           </ChartHeader>
           <ChartBody>
-            <LineChart>
-              <YAxis>
-                {revenueTicks.map((value) => (
-                  <YAxisTick key={value}>{value}</YAxisTick>
-                ))}
-              </YAxis>
-              <ChartCanvas>
-                <defs>
-                  <linearGradient id="lineFill" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0%" stopColor="rgba(129, 140, 248, 0.4)" />
-                    <stop offset="100%" stopColor="rgba(129, 140, 248, 0)" />
-                  </linearGradient>
-                </defs>
-                <GridLines>
-                  {[10, 26, 42, 58, 74].map((y) => (
-                    <line key={y} x1="0" x2="180" y1={y} y2={y} />
+            <ChartWrapper>
+              <YAxisLabels>
+                {[4, 3, 2, 1, 0].map((i) => {
+                  const val = (maxRevenue / 4) * i;
+                  return (
+                    <YAxisTick key={i}>
+                      {formatCurrency(val, currency)}
+                    </YAxisTick>
+                  );
+                })}
+              </YAxisLabels>
+              <ColumnsContainer>
+                <GridLinesVertical $columns={revenueChartSeries.labels.length}>
+                  {revenueChartSeries.labels.map((_, i) => (
+                    <div key={i} className="grid-line" />
                   ))}
-                </GridLines>
-                <AreaPath d={areaPath} />
-                <LinePath d={linePath} />
-                <LineGlow d={linePath} />
-                {chartPoints.map((point) => (
-                  <LinePointGroup key={`${point.x}-${point.y}`}>
-                    <LinePoint cx={point.x} cy={point.y} r="3.5" />
-                    <LinePointLabel
-                      x={point.x}
-                      y={Math.max(6, point.y - 10)}
-                      textAnchor="middle"
-                    >
-                      ${point.amount}
-                    </LinePointLabel>
-                  </LinePointGroup>
-                ))}
-              </ChartCanvas>
-            </LineChart>
-            <XAxis>
-              {chartSeries.labels.map((label) => (
-                <span key={label}>{label}</span>
-              ))}
-            </XAxis>
+                </GridLinesVertical>
+                <ColumnsInner>
+                  {revenueChartSeries.revenue.map((value, index) => (
+                    <ColumnGroup key={`revenue-${revenueChartSeries.labels[index]}-${value}`}>
+                      <RevenueColumn
+                        $height={maxRevenue ? (value / maxRevenue) * 100 : 0}
+                        $isEmpty={value === 0}
+                      >
+                        <ColumnTooltip $edge={getTooltipEdge(index, revenueChartSeries.revenue.length)}>
+                          {revenueChartSeries.labels[index]} · {formatCurrency(value, currency)}
+                        </ColumnTooltip>
+                      </RevenueColumn>
+                    </ColumnGroup>
+                  ))}
+                </ColumnsInner>
+              </ColumnsContainer>
+            </ChartWrapper>
             <ChartLegend>
-              <LegendDot />
-              <span>
-                {formatCurrency(totalRevenue)} total revenue
-              </span>
+              <LegendLeft>
+                <LegendDot />
+                <span>{revenueChartMeta}</span>
+              </LegendLeft>
+              <LegendValue>{formatCurrency(totalRevenue, currency)} {t("totalRevenueSuffix")}</LegendValue>
             </ChartLegend>
           </ChartBody>
         </ChartCard>
         <ChartCard>
           <ChartHeader>
-            <ChartTitle>Orders per day</ChartTitle>
-            <ChartMeta>{totalOrders} orders</ChartMeta>
+            <ChartTitle>{t("ordersPerDay")}</ChartTitle>
+            <ChartHeaderRight>
+              <WeekNavigator>
+                <WeekArrowButton
+                  type="button"
+                  onClick={() => setWeekOffset((prev) => prev - 1)}
+                  aria-label={t("previousWeek")}
+                >
+                  <span aria-hidden="true">◀</span>
+                </WeekArrowButton>
+                <WeekLabel>{weekLabel}</WeekLabel>
+                <WeekArrowButton
+                  type="button"
+                  onClick={() => setWeekOffset((prev) => Math.min(prev + 1, 0))}
+                  aria-label={t("nextWeek")}
+                  disabled={weekOffset === 0}
+                >
+                  <span aria-hidden="true">▶</span>
+                </WeekArrowButton>
+              </WeekNavigator>
+            </ChartHeaderRight>
           </ChartHeader>
           <ChartBody>
-            <Bars>
-              {chartSeries.orders.map((value, index) => (
-                <Bar
-                  key={`${chartSeries.labels[index]}-${value}`}
-                  $height={maxOrders ? Math.max((value / maxOrders) * 100, value ? 12 : 4) : 4}
-                >
-                  <BarValue>{value}</BarValue>
-                  <BarTooltip>
-                    {formatCurrency(chartSeries.revenue[index] || 0)} · {value} orders
-                  </BarTooltip>
-                </Bar>
-              ))}
-            </Bars>
-            <XAxis>
-              {chartSeries.labels.map((label) => (
-                <span key={label}>{label}</span>
-              ))}
-            </XAxis>
+            <ChartWrapper>
+              <YAxisLabels>
+                {[4, 3, 2, 1, 0].map((i) => {
+                  const val = Math.round((maxOrders / 4) * i);
+                  return (
+                    <YAxisTick key={i}>
+                      {val}
+                    </YAxisTick>
+                  );
+                })}
+              </YAxisLabels>
+              <ColumnsContainer>
+                <GridLinesVertical $columns={ordersChartSeries.labels.length}>
+                  {ordersChartSeries.labels.map((_, i) => (
+                    <div key={i} className="grid-line" />
+                  ))}
+                </GridLinesVertical>
+                <ColumnsInner>
+                  {ordersChartSeries.orders.map((value, index) => (
+                    <ColumnGroup key={`orders-${ordersChartSeries.labels[index]}-${value}`}>
+                      <OrdersColumn
+                        $height={maxOrders ? (value / maxOrders) * 100 : 0}
+                        $isEmpty={value === 0}
+                      >
+                        <ColumnTooltip $edge={getTooltipEdge(index, ordersChartSeries.orders.length)}>
+                          {ordersChartSeries.labels[index]} · {value} {t("ordersCountSuffix")}
+                        </ColumnTooltip>
+                      </OrdersColumn>
+                    </ColumnGroup>
+                  ))}
+                </ColumnsInner>
+              </ColumnsContainer>
+            </ChartWrapper>
             <ChartLegend>
-              <LegendDot $accent="emerald" />
-              <span>Hover a bar for revenue</span>
+              <LegendLeft>
+                <LegendDot $accent="emerald" />
+                <span>{ordersChartMeta}</span>
+              </LegendLeft>
+              <LegendValue>{totalOrders} {t("ordersTotalSuffix")}</LegendValue>
             </ChartLegend>
           </ChartBody>
         </ChartCard>
       </Charts>
-    </div>
+      <BestSellingCard>
+        <BestSellingHeader>
+          <BestSellingTitle>{t("bestSellingItems")}</BestSellingTitle>
+          <BestSellingPeriod>{t("last30Days")}</BestSellingPeriod>
+        </BestSellingHeader>
+        {bestSellingItems.length === 0 ? (
+          <BestSellingEmpty>{t("noItemSales")}</BestSellingEmpty>
+        ) : (
+          <BestSellingList>
+            {bestSellingItems.map((item, index) => (
+              <BestSellingRow key={`${item.name}-${index}`}>
+                <BestSellingLeft>
+                  <BestSellingRank>{index + 1}</BestSellingRank>
+                  <BestSellingName title={item.name}>{item.name}</BestSellingName>
+                </BestSellingLeft>
+                <BestSellingRight>
+                  <BestSellingQty>{t("soldCount", { count: item.quantity })}</BestSellingQty>
+                  <BestSellingRevenue>{formatCurrency(item.revenue, currency)}</BestSellingRevenue>
+                </BestSellingRight>
+              </BestSellingRow>
+            ))}
+          </BestSellingList>
+        )}
+      </BestSellingCard>
+    </Page>
   );
 };
 
-const Heading = styled.h1`
-  margin: 0 0 6px;
-  font-size: 30px;
-  font-weight: 600;
-`;
+const Page = styled.div`
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 
-const Subheading = styled.p`
-  margin: 0;
-  color: var(--text-muted);
-`;
-
-const Header = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 24px;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
-`;
-
-const HeaderRight = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-`;
-
-const DatePicker = styled.div`
-  display: grid;
-  gap: 8px;
-  padding: 12px 14px;
-  background: var(--surface);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-sm);
-`;
-
-const DateField = styled.div`
-  display: grid;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--text-muted);
-
-  input {
-    min-width: 150px;
+  &::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
   }
 `;
 
@@ -425,14 +463,20 @@ const Grid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 18px;
+
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+
+  @media (max-width: 480px) {
+    gap: 10px;
+  }
 `;
 
 const Card = styled.div`
-  background: linear-gradient(145deg, rgba(21, 31, 54, 0.95), rgba(17, 24, 39, 0.95));
+  ${cardPanel}
   padding: 22px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-sm);
   position: relative;
   overflow: hidden;
   min-height: 160px;
@@ -446,27 +490,46 @@ const Card = styled.div`
     height: 140px;
     background: ${({ $accent }) =>
       $accent === "indigo"
-        ? "rgba(99, 102, 241, 0.25)"
+        ? "var(--card-accent-indigo)"
         : $accent === "sky"
-          ? "rgba(56, 189, 248, 0.25)"
+          ? "var(--card-accent-sky)"
           : $accent === "emerald"
-            ? "rgba(16, 185, 129, 0.2)"
-            : "rgba(244, 63, 94, 0.2)"};
+            ? "var(--card-accent-emerald)"
+            : "var(--card-accent-rose)"};
     filter: blur(20px);
+  }
+
+  @media (max-width: 600px) {
+    padding: 15px;
+    min-height: 118px;
   }
 `;
 
 const CardLabel = styled.p`
   margin: 0 0 8px;
-  color: var(--text-muted);
-  font-size: 14px;
+  color: var(--analytics-text);
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.75;
 `;
 
 const CardValue = styled.p`
   margin: 0;
-  font-size: 30px;
-  font-weight: 600;
-  color: #fff;
+  font-size: 34px;
+  line-height: 1;
+  font-weight: 700;
+  color: var(--analytics-text);
+
+  @media (max-width: 600px) {
+    font-size: 26px;
+  }
+`;
+
+const CardSubtext = styled.p`
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--analytics-text);
+  opacity: 0.65;
 `;
 
 const CardTop = styled.div`
@@ -476,11 +539,13 @@ const CardTop = styled.div`
 `;
 
 const Chip = styled.span`
-  font-size: 12px;
-  padding: 4px 10px;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  padding: 4px 9px;
   border-radius: 999px;
-  background: rgba(148, 163, 184, 0.16);
-  color: var(--text-soft);
+  background: var(--primary-muted);
+  color: var(--analytics-text);
+  font-weight: 700;
 `;
 
 const Sparkline = styled.svg.attrs({
@@ -497,8 +562,8 @@ const SparklinePath = styled.path`
   fill: none;
   stroke: ${({ $accent }) =>
     $accent === "indigo"
-      ? "#818cf8"
-      : $accent === "sky"
+        ? "var(--sidebar-orange)"
+        : $accent === "sky"
         ? "#38bdf8"
         : $accent === "emerald"
           ? "#34d399"
@@ -508,49 +573,31 @@ const SparklinePath = styled.path`
   opacity: 0.9;
 `;
 
-const HighlightCard = styled.div`
-  background: linear-gradient(130deg, rgba(99, 102, 241, 0.22), rgba(15, 23, 42, 0.85));
-  border: 1px solid rgba(99, 102, 241, 0.35);
-  padding: 16px 18px;
-  border-radius: var(--radius-md);
-  min-width: 200px;
-  box-shadow: var(--shadow-sm);
-`;
-
-const HighlightLabel = styled.p`
-  margin: 0;
-  font-size: 12px;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-`;
-
-const HighlightValue = styled.p`
-  margin: 6px 0 4px;
-  font-size: 24px;
-  font-weight: 600;
-  color: #fff;
-`;
-
-const HighlightMeta = styled.p`
-  margin: 0;
-  font-size: 12px;
-  color: var(--text-soft);
-`;
-
 const Charts = styled.div`
   margin-top: 24px;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: 24px;
+  align-content: start;
+
+  @media (max-width: 820px) {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-top: 18px;
+  }
 `;
 
 const ChartCard = styled.div`
-  background: var(--surface);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border);
-  padding: 18px;
-  box-shadow: var(--shadow-sm);
+  ${cardPanel}
+  padding: 24px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+
+  @media (max-width: 600px) {
+    padding: 16px;
+  }
 `;
 
 const ChartHeader = styled.div`
@@ -558,180 +605,386 @@ const ChartHeader = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
+  gap: 16px;
+
+  @media (max-width: 480px) {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
 `;
 
 const ChartTitle = styled.h3`
   margin: 0;
   font-size: 16px;
   font-weight: 600;
+  color: var(--analytics-text);
 `;
 
-const ChartMeta = styled.span`
+const ChartHeaderRight = styled.div`
+  margin-left: auto;
+`;
+
+const WeekNavigator = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface-2);
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--container-border);
+`;
+
+const WeekArrowButton = styled.button`
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
   font-size: 12px;
-  color: var(--text-muted);
+  font-weight: 700;
+  color: var(--analytics-text);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: color 0.2s ease, background 0.2s ease, opacity 0.2s ease;
+  opacity: 0.9;
+
+  &:hover {
+    color: var(--analytics-text);
+    opacity: 1;
+    background: var(--container-border-subtle);
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+`;
+
+const WeekLabel = styled.span`
+  min-width: 132px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--analytics-text);
+
+  @media (max-width: 480px) {
+    min-width: 92px;
+  }
 `;
 
 const ChartBody = styled.div`
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
+  flex: 0 0 auto;
+  min-height: 0;
+  padding: 4px 0 0 2px;
+  overflow: visible;
 `;
 
-const LineChart = styled.div`
+const CHART_PLOT_HEIGHT = 180;
+const CHART_PLOT_MIN_HEIGHT = 140;
+
+const ChartWrapper = styled.div`
   display: grid;
   grid-template-columns: auto 1fr;
-  align-items: center;
-  gap: 10px;
+  gap: 12px;
+  align-items: stretch;
+  height: ${CHART_PLOT_HEIGHT}px;
+  min-height: ${CHART_PLOT_MIN_HEIGHT}px;
+  flex-shrink: 0;
+  min-width: 0;
+  overflow: visible;
 `;
 
-const ChartCanvas = styled.svg.attrs({
-  viewBox: "0 0 180 80",
-  preserveAspectRatio: "none"
-})`
-  width: 100%;
-  height: 120px;
-  background: linear-gradient(180deg, rgba(99, 102, 241, 0.12), transparent);
-  border-radius: 12px;
-  border: 1px solid rgba(99, 102, 241, 0.2);
-  padding: 10px;
+const YAxisLabels = styled.div`
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  min-width: 52px;
+  padding: 14px 8px 6px 4px;
+  box-sizing: border-box;
 `;
 
-const LinePath = styled.path`
-  fill: none;
-  stroke: #818cf8;
-  stroke-width: 2.8;
-  stroke-linecap: round;
-`;
-
-const LineGlow = styled.path`
-  fill: none;
-  stroke: rgba(129, 140, 248, 0.4);
-  stroke-width: 8;
-  stroke-linecap: round;
-  filter: blur(6px);
-`;
-
-const AreaPath = styled.path`
-  fill: url(#lineFill);
+const YAxisTick = styled.span`
+  font-size: 11px;
+  color: var(--analytics-text);
   opacity: 0.7;
-`;
-
-const GridLines = styled.g`
-  line {
-    stroke: rgba(148, 163, 184, 0.12);
-    stroke-dasharray: 4 6;
-  }
-`;
-
-const LinePointGroup = styled.g`
-  cursor: pointer;
-
-  &:hover text {
-    opacity: 1;
-  }
-
-  &:hover circle {
-    r: 5;
-  }
-`;
-
-const LinePoint = styled.circle`
-  fill: #fff;
-  stroke: #818cf8;
-  stroke-width: 2;
-  transition: r 0.2s ease;
-`;
-
-const LinePointLabel = styled.text`
-  font-size: 10px;
-  fill: #e2e8f0;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  paint-order: stroke;
-  stroke: rgba(15, 23, 42, 0.8);
-  stroke-width: 3;
-`;
-
-const YAxis = styled.div`
-  display: grid;
-  align-content: space-between;
-  height: 120px;
-  font-size: 11px;
-  color: var(--text-muted);
   text-align: right;
+  white-space: nowrap;
+  line-height: 1;
 `;
 
-const YAxisTick = styled.span``;
-
-const Bars = styled.div`
-  display: flex;
-  align-items: flex-end;
-  gap: 10px;
-  height: 120px;
-`;
-
-const Bar = styled.div`
-  flex: 1;
-  height: ${({ $height }) => $height}%;
-  background: linear-gradient(180deg, rgba(34, 197, 94, 0.6), rgba(34, 197, 94, 0.1));
-  border-radius: 999px;
-  border: 1px solid rgba(34, 197, 94, 0.35);
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding-bottom: 6px;
+const ColumnsContainer = styled.div`
   position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 44px,
+    var(--container-border-subtle) 44px,
+    var(--container-border-subtle) 45px
+  );
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--container-border);
+  overflow: visible;
+`;
 
-  &:hover span[data-tooltip] {
-    opacity: 1;
-    transform: translateY(-6px);
+const GridLinesVertical = styled.div`
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(${({ $columns }) => $columns || 7}, 1fr);
+  pointer-events: none;
+
+  .grid-line {
+    border-right: 1px dashed var(--container-border-subtle);
+  }
+  .grid-line:last-child { border-right: none; }
+`;
+
+const ColumnsInner = styled.div`
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 14px 20px 6px;
+  min-height: 0;
+`;
+
+const ColumnGroup = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 0;
+  height: 100%;
+`;
+
+const RevenueColumn = styled.div`
+  width: 100%;
+  max-width: 48px;
+  min-height: ${({ $isEmpty }) => ($isEmpty ? 4 : 6)}px;
+  height: ${({ $height }) => Math.max($height, 0)}%;
+  background: linear-gradient(180deg, #ff7700 0%, #ff6600 50%, rgba(255, 102, 0, 0.95) 100%);
+  border-radius: 8px 8px 0 0;
+  border: 1px solid rgba(255, 102, 0, 0.4);
+  box-shadow: 0 -2px 12px rgba(255, 102, 0, 0.2);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 6px;
+  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: scaleY(1.02);
+    box-shadow: 0 -4px 20px rgba(255, 102, 0, 0.35);
   }
 `;
 
-const BarValue = styled.span`
-  font-size: 11px;
-  color: #d1fae5;
+const OrdersColumn = styled.div`
+  width: 100%;
+  max-width: 48px;
+  min-height: ${({ $isEmpty }) => ($isEmpty ? 4 : 6)}px;
+  height: ${({ $height }) => Math.max($height, 0)}%;
+  background: linear-gradient(180deg, #22c55e 0%, #16a34a 50%, rgba(22, 163, 74, 0.6) 100%);
+  border-radius: 8px 8px 0 0;
+  border: 1px solid rgba(34, 197, 94, 0.5);
+  box-shadow: 0 -2px 12px rgba(34, 197, 94, 0.25);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 6px;
+  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: scaleY(1.02);
+    box-shadow: 0 -4px 20px rgba(34, 197, 94, 0.35);
+  }
 `;
 
-const BarTooltip = styled.span.attrs({ "data-tooltip": true })`
+const ColumnTooltip = styled.span.attrs({ "data-tooltip": true })`
   position: absolute;
-  top: -28px;
-  background: rgba(15, 23, 42, 0.9);
-  color: #fff;
-  padding: 4px 8px;
-  border-radius: 999px;
+  top: -36px;
+  ${({ $edge }) =>
+    $edge === "end"
+      ? "right: 0; left: auto;"
+      : $edge === "start"
+        ? "left: 0; right: auto;"
+        : "left: 50%;"}
+  --tt-x: ${({ $edge }) => ($edge === "end" || $edge === "start" ? "0px" : "-50%")};
+  transform: translateX(var(--tt-x)) translateY(0);
+  background: var(--tooltip-bg);
+  color: var(--tooltip-text);
+  padding: 6px 10px;
+  border-radius: 8px;
   font-size: 11px;
+  font-weight: 500;
   opacity: 0;
-  transform: translateY(0);
   transition: opacity 0.2s ease, transform 0.2s ease;
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  border: 1px solid var(--border);
   white-space: nowrap;
-`;
+  z-index: 100;
+  box-shadow: var(--shadow-sm);
+  pointer-events: none;
 
-const XAxis = styled.div`
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(40px, 1fr);
-  gap: 6px;
-  font-size: 11px;
-  color: var(--text-muted);
-  text-align: center;
-  overflow-x: auto;
-  padding-bottom: 4px;
+  ${RevenueColumn}:hover &,
+  ${OrdersColumn}:hover & {
+    opacity: 1;
+    transform: translateX(var(--tt-x)) translateY(-4px);
+  }
 `;
 
 const ChartLegend = styled.div`
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 10px;
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--analytics-text);
+  opacity: 0.75;
+  border-top: 1px solid var(--container-border-subtle);
+  padding-top: 10px;
+  margin-top: 2px;
 `;
 
 const LegendDot = styled.span`
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: ${({ $accent }) => ($accent === "emerald" ? "#34d399" : "#818cf8")};
+  background: ${({ $accent }) => ($accent === "emerald" ? "#22c55e" : "var(--sidebar-orange)")};
+`;
+
+const LegendLeft = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+
+  span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+`;
+
+const LegendValue = styled.span`
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--analytics-text);
+  white-space: nowrap;
+`;
+
+const BestSellingCard = styled.div`
+  margin-top: 24px;
+  ${cardPanel}
+  padding: 22px;
+
+  @media (max-width: 600px) {
+    margin-top: 18px;
+    padding: 16px;
+  }
+`;
+
+const BestSellingHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+`;
+
+const BestSellingTitle = styled.h3`
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--analytics-text);
+`;
+
+const BestSellingPeriod = styled.span`
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--analytics-text);
+  opacity: 0.8;
+  border: 1px solid var(--container-border);
+  border-radius: 999px;
+  padding: 4px 10px;
+`;
+
+const BestSellingEmpty = styled.p`
+  margin: 0;
+  color: var(--analytics-text);
+  opacity: 0.7;
+`;
+
+const BestSellingList = styled.div`
+  ${cardItem}
+  overflow: hidden;
+`;
+
+const BestSellingRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--primary) 16%, var(--container-border-subtle));
+
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+const BestSellingLeft = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+`;
+
+const BestSellingRank = styled.span`
+  width: 20px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--analytics-text);
+  opacity: 0.75;
+`;
+
+const BestSellingName = styled.span`
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--analytics-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const BestSellingRight = styled.div`
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+`;
+
+const BestSellingQty = styled.span`
+  font-size: 12px;
+  color: var(--analytics-text);
+  opacity: 0.75;
+`;
+
+const BestSellingRevenue = styled.span`
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--analytics-text);
 `;
 
 export default Dashboard;

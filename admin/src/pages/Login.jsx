@@ -1,10 +1,14 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { supabase } from "../services/supabase";
+import { useTheme } from "../context/ThemeContext";
+import { useLanguage } from "../context/LanguageContext";
 
 const Login = () => {
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -18,7 +22,7 @@ const Login = () => {
     const cleanedEmail = email.trim().toLowerCase();
     if (!cleanedEmail) {
       setLoading(false);
-      setError("Please enter a valid email.");
+      setError(t("validEmailRequired"));
       return;
     }
 
@@ -39,13 +43,20 @@ const Login = () => {
 
   return (
     <Shell>
+      <ThemeToggle type="button" onClick={toggleTheme} aria-label={theme === "dark" ? t("switchToLight") : t("switchToDark")}>
+        {theme === "dark" ? (
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" fill="none" /></svg>
+        ) : (
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
+        )}
+      </ThemeToggle>
       <Card>
-        <Brand>QRMenu Admin</Brand>
-        <Title>Welcome back</Title>
-        <Subtitle>Sign in to manage your restaurant.</Subtitle>
+        <Brand>{t("brandAdmin")}</Brand>
+        <Title>{t("loginWelcome")}</Title>
+        <Subtitle>{t("loginSubtitle")}</Subtitle>
         <Form onSubmit={handleSubmit}>
           <Label>
-            Email
+            {t("email")}
             <Input
               type="email"
               value={email}
@@ -54,7 +65,7 @@ const Login = () => {
             />
           </Label>
           <Label>
-            Password
+            {t("password")}
             <Input
               type="password"
               value={password}
@@ -64,12 +75,9 @@ const Login = () => {
           </Label>
           {error && <ErrorText>{error}</ErrorText>}
           <Button type="submit" disabled={loading}>
-            {loading ? "Signing in..." : "Login"}
+            {loading ? t("signingIn") : t("loginButton")}
           </Button>
         </Form>
-        <Footer>
-          No account? <Link to="/register">Create one</Link>
-        </Footer>
       </Card>
     </Shell>
   );
@@ -80,18 +88,42 @@ const Shell = styled.div`
   display: grid;
   place-items: center;
   padding: 24px;
-  background: radial-gradient(circle at top, rgba(99, 102, 241, 0.25), transparent 55%),
-    var(--bg);
+  background: var(--bg);
+  position: relative;
+`;
+
+const ThemeToggle = styled.button`
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    color: var(--text);
+  }
+
+  svg {
+    width: 22px;
+    height: 22px;
+  }
 `;
 
 const Card = styled.div`
   width: min(420px, 100%);
-  background: rgba(15, 23, 42, 0.75);
+  background: var(--surface);
   border-radius: var(--radius-lg);
   padding: 32px;
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  border: 1px solid var(--border);
   box-shadow: var(--shadow-lg);
-  backdrop-filter: blur(12px);
 `;
 
 const Brand = styled.p`
@@ -142,12 +174,6 @@ const Button = styled.button`
 const ErrorText = styled.p`
   margin: 0;
   color: var(--danger);
-`;
-
-const Footer = styled.p`
-  margin-top: 16px;
-  font-size: 14px;
-  color: var(--text-muted);
 `;
 
 export default Login;

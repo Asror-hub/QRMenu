@@ -1,0 +1,64 @@
+import { Laptop, Phone, ScreenDashboard, ScreenFloorBoard, ScreenGuestMenu, Tablet } from "./Devices.jsx";
+import { useLanguage } from "../context/LanguageContext.jsx";
+
+/**
+ * Swap these paths when real screenshots are ready:
+ * guest:  /media/guest-menu.png
+ * floor:  /media/floor-orders.png
+ * admin:  /media/admin-dashboard.png
+ */
+const SHOTS = {
+  guest: null,
+  floor: null,
+  admin: null,
+};
+
+export function Hero() {
+  const { t } = useLanguage();
+
+  return (
+    <section className="hero" id="top" aria-labelledby="hero-brand">
+      <div className="hero__grid" aria-hidden />
+      <div className="hero__wash" aria-hidden />
+
+      <div className="hero__inner">
+        <div className="hero__copy">
+          <p className="hero__brand" id="hero-brand">
+            QRMenu
+          </p>
+          <h1 className="hero__title">{t("hero.title")}</h1>
+          <p className="hero__lead">{t("hero.lead")}</p>
+          <div className="hero__actions">
+            <a className="btn btn--primary btn--lg" href="#contact">
+              {t("hero.ctaWalkthrough")}
+            </a>
+            <a className="btn btn--ghost btn--lg" href="#demo">
+              {t("hero.ctaWatch")}
+            </a>
+          </div>
+        </div>
+
+        <div className="hero__stage" aria-label={t("hero.stageAria")}>
+          <div className="hero__pedestal" aria-hidden />
+          <div className="hero__cluster">
+            <div className="hero__device hero__device--laptop">
+              <Laptop src={SHOTS.admin} alt={t("hero.altLaptop")}>
+                <ScreenDashboard />
+              </Laptop>
+            </div>
+            <div className="hero__device hero__device--tablet">
+              <Tablet src={SHOTS.floor} alt={t("hero.altTablet")}>
+                <ScreenFloorBoard />
+              </Tablet>
+            </div>
+            <div className="hero__device hero__device--phone">
+              <Phone src={SHOTS.guest} alt={t("hero.altPhone")} glow>
+                <ScreenGuestMenu />
+              </Phone>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}

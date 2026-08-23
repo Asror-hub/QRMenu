@@ -1,33 +1,28 @@
 import styled from "styled-components";
+import { cardPanel } from "../styles/cards";
+import { useLanguage } from "../context/LanguageContext";
 
-const Support = () => (
-  <Shell>
-    <Heading>Support</Heading>
-    <Card>
-      <Title>Need help?</Title>
-      <Subtitle>Get in touch with our support team.</Subtitle>
-      <Placeholder>Support content coming soon.</Placeholder>
-    </Card>
-  </Shell>
-);
+const Support = () => {
+  const { t } = useLanguage();
+  return (
+    <Shell>
+      <Card>
+        <Title>{t("supportTitle")}</Title>
+        <Subtitle>{t("supportSubtitle")}</Subtitle>
+        <Placeholder>{t("supportPlaceholder")}</Placeholder>
+      </Card>
+    </Shell>
+  );
+};
 
 const Shell = styled.div`
   display: grid;
   gap: 16px;
 `;
 
-const Heading = styled.h1`
-  margin: 0;
-  font-size: 28px;
-  font-weight: 600;
-`;
-
 const Card = styled.div`
-  background: var(--surface);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border);
+  ${cardPanel}
   padding: 18px;
-  box-shadow: var(--shadow-sm);
   display: grid;
   gap: 8px;
 `;

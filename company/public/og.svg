@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#0b1f3a"/>
+  <rect x="0" y="0" width="8" height="630" fill="#2b6cff"/>
+  <text x="80" y="250" fill="#ffffff" font-family="Georgia, serif" font-size="86" font-weight="700">QRMenu</text>
+  <text x="80" y="330" fill="#9fb0c8" font-family="Arial, sans-serif" font-size="32">QR menus, table orders, and restaurant operations</text>
+</svg>

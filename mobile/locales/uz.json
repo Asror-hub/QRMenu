@@ -1,0 +1,8 @@
+{
+  "ios": {
+    "CFBundleDisplayName": "QRMenu Admin"
+  },
+  "android": {
+    "app_name": "QRMenu Admin"
+  }
+}
