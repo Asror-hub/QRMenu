@@ -16,6 +16,188 @@ The platform is multi-tenant: a super-admin "platform" app provisions restaurant
 
 ---
 
+## Screenshots
+
+### Customer (Guest)
+
+<table>
+  <tr>
+    <td align="center">
+      <strong>Guest menu — QR ordering</strong><br/>
+      <img src="screenshots/customer-menu-screen.jpg" width="400" alt="Guest menu — QR ordering"/>
+    </td>
+    <td align="center">
+      <strong>Customer cart</strong><br/>
+      <img src="screenshots/customer-cart-screen.jpg" width="400" alt="Customer cart"/>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <strong>Live order updates</strong><br/>
+      <img src="screenshots/customer-live-order-updates.jpg" width="400" alt="Live order updates"/>
+    </td>
+    <td></td>
+  </tr>
+</table>
+
+<details>
+<summary>Show more Customer screenshots</summary>
+
+<table>
+  <tr>
+    <td align="center">
+      <strong>Item details</strong><br/>
+      <img src="screenshots/customer-item-details.jpg" width="400" alt="Item details"/>
+    </td>
+    <td></td>
+  </tr>
+</table>
+
+</details>
+
+### Admin — Desktop
+
+<table>
+  <tr>
+    <td align="center">
+      <strong>Desktop orders</strong><br/>
+      <img src="screenshots/desktop-orders-screen.png" width="400" alt="Desktop orders"/>
+    </td>
+    <td align="center">
+      <strong>Desktop analytics</strong><br/>
+      <img src="screenshots/desktop-analytics-screen.png" width="400" alt="Desktop analytics"/>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <strong>Desktop reservations</strong><br/>
+      <img src="screenshots/desktop-reservations-screen.png" width="400" alt="Desktop reservations"/>
+    </td>
+    <td></td>
+  </tr>
+</table>
+
+<details>
+<summary>Show more Admin — Desktop screenshots</summary>
+
+<table>
+  <tr>
+    <td align="center">
+      <strong>Desktop feedbacks</strong><br/>
+      <img src="screenshots/desktop-feedbacks-screen.png" width="400" alt="Desktop feedbacks"/>
+    </td>
+    <td></td>
+  </tr>
+</table>
+
+</details>
+
+### Admin — Mobile
+
+<table>
+  <tr>
+    <td align="center">
+      <strong>Mobile dashboard</strong><br/>
+      <img src="screenshots/main-admin-mobile-screen.jpg" width="400" alt="Mobile dashboard"/>
+    </td>
+    <td align="center">
+      <strong>Mobile orders</strong><br/>
+      <img src="screenshots/mobile-orders-screen.jpg" width="400" alt="Mobile orders"/>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <strong>Order details</strong><br/>
+      <img src="screenshots/mobile-order-details-screen.jpg" width="400" alt="Order details"/>
+    </td>
+    <td></td>
+  </tr>
+</table>
+
+<details>
+<summary>Show more Admin — Mobile screenshots</summary>
+
+<table>
+  <tr>
+    <td align="center">
+      <strong>Live tables map</strong><br/>
+      <img src="screenshots/mobile-live-tables-view.jpg" width="400" alt="Live tables map"/>
+    </td>
+    <td align="center">
+      <strong>Mobile analytics</strong><br/>
+      <img src="screenshots/mobile-analytics-screen.jpg" width="400" alt="Mobile analytics"/>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <strong>Edit menu</strong><br/>
+      <img src="screenshots/mobile-edit-menu-screen.jpg" width="400" alt="Edit menu"/>
+    </td>
+    <td align="center">
+      <strong>Edit / view item</strong><br/>
+      <img src="screenshots/mobile-edit-view-item-screen.jpg" width="400" alt="Edit / view item"/>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <strong>QR codes</strong><br/>
+      <img src="screenshots/mobile-qr-codes-screen.jpg" width="400" alt="QR codes"/>
+    </td>
+    <td align="center">
+      <strong>Mobile reservations</strong><br/>
+      <img src="screenshots/mobile-reservations-screen.jpg" width="400" alt="Mobile reservations"/>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <strong>Mobile feedbacks</strong><br/>
+      <img src="screenshots/mobile-feedbacks-screen.jpg" width="400" alt="Mobile feedbacks"/>
+    </td>
+    <td></td>
+  </tr>
+</table>
+
+</details>
+
+### Admin — Tablet
+
+<table>
+  <tr>
+    <td align="center">
+      <strong>Tablet main screen</strong><br/>
+      <img src="screenshots/tablet-main-screen.png" width="400" alt="Tablet main screen"/>
+    </td>
+    <td align="center">
+      <strong>Tablet orders</strong><br/>
+      <img src="screenshots/tablet-orders-screen.png" width="400" alt="Tablet orders"/>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <strong>Submit order</strong><br/>
+      <img src="screenshots/tablet-order-submitting-screen.png" width="400" alt="Submit order"/>
+    </td>
+    <td></td>
+  </tr>
+</table>
+
+<details>
+<summary>Show more Admin — Tablet screenshots</summary>
+
+<table>
+  <tr>
+    <td align="center">
+      <strong>Menu view / edit</strong><br/>
+      <img src="screenshots/tablet-menu-view-edit-screen.png" width="400" alt="Menu view / edit"/>
+    </td>
+    <td></td>
+  </tr>
+</table>
+
+</details>
+
+---
+
 ## Architecture
 
 Four Vite + React single-page apps, each deployed independently as a Cloudflare Worker, plus one Expo/React Native app for staff:
