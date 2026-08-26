@@ -262,6 +262,93 @@ POS isn't a separate product — it's how accepted (and paid) orders leave QRMen
 
 ---
 
+## Getting Started
+
+This is a multi-app monorepo: each app under `company/`, `admin/`, `customer/`, `platform/`, and `mobile/` has its own `package.json` and is installed/run separately (no root workspace).
+
+### Prerequisites
+
+- **Node.js 20+** (developed with v24.13.0)
+- **npm** (lockfiles are `package-lock.json` in each app)
+- **Expo** for mobile — use the local CLI via `npm start` / `npx expo` (Expo SDK ~54)
+
+### Environment variables
+
+Copy each app’s `.env.example` → `.env` (or `.env.local`) and fill in values.
+
+**`admin/`**
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+- `VITE_CUSTOMER_APP_URL`
+- `VITE_CLOUDINARY_CLOUD_NAME`
+- `VITE_CLOUDINARY_UPLOAD_PRESET`
+
+**`customer/`**
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+
+**`company/`**
+- `VITE_PUBLIC_SITE_URL`
+- `VITE_CONTACT_PHONE`
+- `VITE_CONTACT_TELEGRAM`
+- `VITE_CONTACT_WHATSAPP`
+- `VITE_CONTACT_EMAIL`
+
+**`platform/`**
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`  
+  (same Supabase project as admin; user needs `app_metadata.is_platform_admin = true`)
+
+**`mobile/`**
+- `EXPO_PUBLIC_SUPABASE_URL`
+- `EXPO_PUBLIC_SUPABASE_ANON_KEY`
+- `EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME`
+- `EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET`
+- `EXPO_PUBLIC_CUSTOMER_APP_URL`
+
+**Supabase Edge Function secrets** (Dashboard → Edge Functions → Secrets; not in app `.env` files):
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SIGNING_SECRET`
+- `CLOUDINARY_CLOUD_NAME`
+- `CLOUDINARY_API_KEY`
+- `CLOUDINARY_API_SECRET`
+
+See also `docs/PAYMENTS.md` for Stripe webhook setup.
+
+### Install
+
+```bash
+cd company && npm install
+cd ../admin && npm install
+cd ../customer && npm install
+cd ../platform && npm install
+cd ../mobile && npm install
+```
+
+### Run locally
+
+| App | Command | Notes |
+|---|---|---|
+| Marketing | `cd company && npm run dev` | Vite (`--host`) |
+| Admin | `cd admin && npm run dev` | port **5173** |
+| Customer | `cd customer && npm run dev` | port **5174** |
+| Platform | `cd platform && npm run dev` | port **5175** |
+| Mobile | `cd mobile && npm start` | Expo; also `npm run android` / `npm run ios` |
+
+### Supabase
+
+Schema and RLS live under `supabase/`:
+- `supabase/schema.sql` — base schema
+- `supabase/migrations/` — numbered SQL migrations
+- `supabase/rls.sql` — RLS policies
+- `supabase/functions/` — Edge Functions (`create-checkout-session`, `stripe-webhook`, `send-order-to-pos`, `delete-cloudinary-image`, `provision-restaurant`)
+
+Apply the schema by running `supabase/schema.sql`, then each file in `supabase/migrations/` in order, using the Supabase Dashboard's SQL Editor.
+
+Apply migrations against your project before running the apps. Deploy Edge Functions and set the secrets above for payments/POS/Cloudinary delete.
+
+---
+
 ## Deployment
 
 | App | URL |
