@@ -116,6 +116,12 @@ export function VideoStage() {
           </div>
         </Reveal>
 
+        <div className="video-stage__cta">
+          <a className="btn btn--primary btn--lg" href="#contact">
+            {t("hero.ctaWalkthrough")}
+          </a>
+        </div>
+
         <ol className="video-stage__rail">
           {RAIL_KEYS.map((key, i) => (
             <Reveal as="li" key={key} delay={80 + i * 90}>

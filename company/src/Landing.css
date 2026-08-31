@@ -295,7 +295,7 @@ body.nav-menu-open {
 .nav__burger {
   position: relative;
   z-index: 3;
-  margin-left: auto;
+  margin-left: 0;
   width: 2.65rem;
   height: 2.65rem;
   display: grid;
@@ -410,6 +410,10 @@ body.nav-menu-open {
   position: relative;
 }
 
+.lang-dropdown--bar {
+  display: none;
+}
+
 .lang-dropdown__trigger {
   appearance: none;
   display: inline-flex;
@@ -501,7 +505,105 @@ body.nav-menu-open {
   box-shadow: var(--ring);
 }
 
+.lang-dropdown__option-code {
+  display: none;
+}
+
+.header-tools {
+  display: none;
+}
+
 @media (max-width: 1023px) {
+  .header-tools {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-left: auto;
+    position: relative;
+    z-index: 3;
+  }
+
+  .lang-dropdown--bar {
+    display: block;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .lang-dropdown--bar .lang-dropdown__trigger {
+    height: 2.65rem;
+    min-width: 0;
+    padding: 0 0.72rem 0 0.68rem;
+    gap: 0.3rem;
+    border-radius: 999px;
+    border: 1px solid var(--line-2);
+    background: rgba(255, 255, 255, 0.72);
+    font-family: var(--display);
+    font-size: 0.72rem;
+    font-weight: 750;
+    letter-spacing: 0.08em;
+  }
+
+  .lang-dropdown--bar.is-open .lang-dropdown__trigger {
+    background: #fff;
+    border-color: rgba(43, 108, 255, 0.38);
+    color: var(--blue);
+  }
+
+  .lang-dropdown--bar .lang-dropdown__globe {
+    display: block;
+    flex-shrink: 0;
+    opacity: 0.82;
+  }
+
+  .lang-dropdown--bar .lang-dropdown__chevron {
+    width: 10px;
+    height: 10px;
+    opacity: 0.5;
+  }
+
+  .lang-dropdown--bar .lang-dropdown__menu {
+    top: calc(100% + 0.5rem);
+    right: 0;
+    min-width: 9.25rem;
+    padding: 0.35rem;
+    border-radius: 1rem;
+    border-color: rgba(11, 31, 58, 0.08);
+    box-shadow: 0 18px 40px rgba(11, 31, 58, 0.16);
+  }
+
+  .lang-dropdown--bar .lang-dropdown__option {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    border-radius: 0.72rem;
+    padding: 0.62rem 0.7rem;
+    font-family: var(--display);
+    font-size: 0.78rem;
+    letter-spacing: 0.02em;
+  }
+
+  .lang-dropdown--bar .lang-dropdown__option-code {
+    display: inline-grid;
+    place-items: center;
+    min-width: 1.7rem;
+    height: 1.35rem;
+    border-radius: 0.4rem;
+    background: rgba(43, 108, 255, 0.1);
+    color: var(--blue);
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+  }
+
+  .lang-dropdown--bar .lang-dropdown__option.is-active .lang-dropdown__option-code {
+    background: var(--blue);
+    color: #fff;
+  }
+
+  .lang-dropdown--nav {
+    display: none;
+  }
+
   .nav {
     position: fixed;
     inset: 0;
@@ -547,24 +649,6 @@ body.nav-menu-open {
     align-items: stretch;
   }
 
-  .nav__cta-group .lang-dropdown {
-    width: 100%;
-  }
-
-  .nav__cta-group .lang-dropdown__trigger {
-    width: 100%;
-    justify-content: space-between;
-    padding: 0.7rem 0.9rem;
-    font-size: 0.78rem;
-    border-radius: 0.85rem;
-  }
-
-  .nav__cta-group .lang-dropdown__menu {
-    left: 0;
-    right: 0;
-    min-width: 0;
-  }
-
   .nav__cta-group .btn {
     width: 100%;
   }
@@ -572,7 +656,9 @@ body.nav-menu-open {
 
 @media (min-width: 1024px) {
   .nav__burger,
-  .nav__backdrop {
+  .nav__backdrop,
+  .header-tools,
+  .lang-dropdown--bar {
     display: none;
   }
 }
@@ -1570,7 +1656,7 @@ body.nav-menu-open {
   .hero__inner {
     gap: 0.5rem;
     padding-top: clamp(6.5rem, 13vh, 8.75rem);
-    padding-bottom: 5.5rem;
+    padding-bottom: 9.5rem;
   }
 
   .hero__text {
@@ -1587,10 +1673,7 @@ body.nav-menu-open {
   }
 
   .hero__actions {
-    order: 3;
-    justify-content: center;
-    margin-top: 4rem;
-    margin-bottom: 2rem;
+    display: none;
   }
 
   .hero__lead {
@@ -1666,7 +1749,7 @@ body.nav-menu-open {
   .hero__inner {
     gap: 0.35rem;
     padding-top: clamp(6.25rem, 18vw, 8rem);
-    padding-bottom: 5.75rem;
+    padding-bottom: 9.75rem;
   }
 
   .hero__title,
@@ -1922,6 +2005,22 @@ body.nav-menu-open {
 
 .video-stage__theater {
   position: relative;
+}
+
+.video-stage__cta {
+  display: none;
+}
+
+@media (max-width: 979px) {
+  .video-stage__cta {
+    display: flex;
+    justify-content: center;
+    margin: 1.2rem 0 0.1rem;
+  }
+
+  .video-stage__cta .btn {
+    width: min(100%, 20rem);
+  }
 }
 
 .video-stage__glow {
