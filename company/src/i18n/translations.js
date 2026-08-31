@@ -32,7 +32,7 @@ const en = {
     "Guests order from their phone. Staff run the floor on tablet. Owners see it all on desktop.",
   "hero.ctaWalkthrough": "Schedule a walkthrough",
   "hero.ctaWatch": "Watch the product",
-  "hero.stageAria": "Product on phone, tablet, and laptop",
+  "hero.stageAria": "Product on phone and tablet",
   "hero.altLaptop": "QRMenu admin dashboard on laptop",
   "hero.altTablet": "Live floor board on tablet",
   "hero.altPhone": "Guest menu on phone",
@@ -265,6 +265,7 @@ const en = {
   "footer.choosePackage": "Choose a package",
   "footer.about": "About",
   "footer.whoFor": "Who it’s for",
+  "footer.privacy": "Privacy policy",
   "footer.rights": "All rights reserved.",
 };
 
@@ -286,7 +287,7 @@ const ru = {
     "Гости заказывают с телефона. Персонал ведёт зал с планшета. Владельцы видят всё с компьютера.",
   "hero.ctaWalkthrough": "Записаться на демо",
   "hero.ctaWatch": "Смотреть продукт",
-  "hero.stageAria": "Продукт на телефоне, планшете и ноутбуке",
+  "hero.stageAria": "Продукт на телефоне и планшете",
   "hero.altLaptop": "Админ-панель QRMenu на ноутбуке",
   "hero.altTablet": "Живая доска зала на планшете",
   "hero.altPhone": "Гостевое меню на телефоне",
@@ -523,6 +524,7 @@ const ru = {
   "footer.choosePackage": "Выбрать пакет",
   "footer.about": "О нас",
   "footer.whoFor": "Для кого",
+  "footer.privacy": "Политика конфиденциальности",
   "footer.rights": "Все права защищены.",
 };
 
@@ -544,7 +546,7 @@ const uz = {
     "Mehmonlar telefonidan buyurtma beradi. Xodimlar planshetda zalni boshqaradi. Egalar hammasi desktopda ko'radi.",
   "hero.ctaWalkthrough": "Demo uchrashuvni belgilash",
   "hero.ctaWatch": "Mahsulotni ko'rish",
-  "hero.stageAria": "Mahsulot telefon, planshet va noutbukda",
+  "hero.stageAria": "Mahsulot telefon va planshetda",
   "hero.altLaptop": "Noutbukdagi QRMenu admin paneli",
   "hero.altTablet": "Planshetdagi jonli zal doskasi",
   "hero.altPhone": "Telefondagi mehmon menyusi",
@@ -781,6 +783,7 @@ const uz = {
   "footer.choosePackage": "Paket tanlash",
   "footer.about": "Biz haqimizda",
   "footer.whoFor": "Kimlar uchun",
+  "footer.privacy": "Maxfiylik siyosati",
   "footer.rights": "Barcha huquqlar himoyalangan.",
 };
 

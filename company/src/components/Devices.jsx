@@ -16,20 +16,6 @@ export function Phone({ src, alt = "", children, className = "", glow = false })
   );
 }
 
-/** Cleaner phone frame used in product panels — ready for real app screenshots */
-export function ProductPhone({ src, alt = "", children, className = "" }) {
-  return (
-    <div className={`product-phone${className ? ` ${className}` : ""}`.trim()}>
-      <div className="product-phone__shell">
-        <div className="product-phone__island" aria-hidden />
-        <div className="product-phone__screen">
-          {src ? <img src={src} alt={alt} loading="lazy" /> : children}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export function Tablet({ src, alt = "", children, className = "" }) {
   return (
     <div className={`device device--tablet${className ? ` ${className}` : ""}`.trim()}>

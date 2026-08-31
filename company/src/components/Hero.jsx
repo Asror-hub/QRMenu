@@ -1,17 +1,5 @@
-import { Laptop, Phone, ScreenDashboard, ScreenFloorBoard, ScreenGuestMenu, Tablet } from "./Devices.jsx";
 import { useLanguage } from "../context/LanguageContext.jsx";
-
-/**
- * Swap these paths when real screenshots are ready:
- * guest:  /media/guest-menu.png
- * floor:  /media/floor-orders.png
- * admin:  /media/admin-dashboard.png
- */
-const SHOTS = {
-  guest: null,
-  floor: null,
-  admin: null,
-};
+import shotMix from "../assets/images/mix.png";
 
 export function Hero() {
   const { t } = useLanguage();
@@ -38,25 +26,15 @@ export function Hero() {
           </div>
         </div>
 
-        <div className="hero__stage" aria-label={t("hero.stageAria")}>
+        <div className="hero__stage">
           <div className="hero__pedestal" aria-hidden />
-          <div className="hero__cluster">
-            <div className="hero__device hero__device--laptop">
-              <Laptop src={SHOTS.admin} alt={t("hero.altLaptop")}>
-                <ScreenDashboard />
-              </Laptop>
-            </div>
-            <div className="hero__device hero__device--tablet">
-              <Tablet src={SHOTS.floor} alt={t("hero.altTablet")}>
-                <ScreenFloorBoard />
-              </Tablet>
-            </div>
-            <div className="hero__device hero__device--phone">
-              <Phone src={SHOTS.guest} alt={t("hero.altPhone")} glow>
-                <ScreenGuestMenu />
-              </Phone>
-            </div>
-          </div>
+          <img
+            className="hero__mix"
+            src={shotMix}
+            alt={t("hero.stageAria")}
+            decoding="async"
+            fetchPriority="high"
+          />
         </div>
       </div>
     </section>
