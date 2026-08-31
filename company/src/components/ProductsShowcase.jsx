@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Reveal } from "./Reveal.jsx";
 import { useLanguage } from "../context/LanguageContext.jsx";
 import shot1 from "../assets/images/01.png";
@@ -20,6 +22,23 @@ const products = [
 
 export function ProductsShowcase() {
   const { t } = useLanguage();
+  const [lightbox, setLightbox] = useState(null);
+
+  useEffect(() => {
+    if (!lightbox) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e) => {
+      if (e.key === "Escape") setLightbox(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [lightbox]);
+
+  const closeLightbox = () => setLightbox(null);
 
   return (
     <section className="section section--products" id="product" aria-labelledby="products-title">
@@ -35,6 +54,7 @@ export function ProductsShowcase() {
             const n = String(index + 1);
             const flip = index % 2 === 1;
             const prefix = `product.${product.i18n}`;
+            const title = t(`${prefix}.title`);
             const points = [1, 2, 3, 4].map((i) => t(`${prefix}.p${i}`));
             return (
               <Reveal
@@ -52,7 +72,7 @@ export function ProductsShowcase() {
                       <span className="product-panel__index">{n}</span>
                       <span className="product-panel__kicker">{t(`${prefix}.kicker`)}</span>
                     </div>
-                    <h3 id={`product-${product.id}-title`}>{t(`${prefix}.title`)}</h3>
+                    <h3 id={`product-${product.id}-title`}>{title}</h3>
                     <ul className="product-panel__points">
                       {points.map((point) => (
                         <li key={point}>{point}</li>
@@ -68,13 +88,20 @@ export function ProductsShowcase() {
                     <span className="product-panel__bg-num" aria-hidden>
                       {n}
                     </span>
-                    <img
-                      className="product-panel__shot"
-                      src={product.src}
-                      alt={t(`${prefix}.title`)}
-                      loading="lazy"
-                      decoding="async"
-                    />
+                    <button
+                      type="button"
+                      className="product-panel__shot-btn"
+                      onClick={() => setLightbox({ src: product.src, alt: title })}
+                      aria-label={t("products.viewShot")}
+                    >
+                      <img
+                        className="product-panel__shot"
+                        src={product.src}
+                        alt={title}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </button>
                   </div>
                 </article>
               </Reveal>
@@ -82,6 +109,36 @@ export function ProductsShowcase() {
           })}
         </div>
       </div>
+
+      {lightbox
+        ? createPortal(
+            <div
+              className="shot-lightbox"
+              role="dialog"
+              aria-modal="true"
+              aria-label={lightbox.alt}
+              onClick={closeLightbox}
+            >
+              <button
+                type="button"
+                className="shot-lightbox__close"
+                onClick={closeLightbox}
+                aria-label={t("products.closeShot")}
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <path
+                    d="M6 6l12 12M18 6 6 18"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </button>
+              <img className="shot-lightbox__img" src={lightbox.src} alt={lightbox.alt} />
+            </div>,
+            document.body
+          )
+        : null}
     </section>
   );
 }

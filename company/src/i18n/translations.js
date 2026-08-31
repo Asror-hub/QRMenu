@@ -64,6 +64,8 @@ const en = {
   "products.title": "Built for real service moments.",
   "products.lead": "Each capability, shown the way guests and staff actually use it.",
   "products.details": "Details",
+  "products.viewShot": "View screenshot",
+  "products.closeShot": "Close screenshot",
 
   "product.online-menu.title": "Online QR menu",
   "product.online-menu.kicker": "Guest experience",
@@ -324,6 +326,8 @@ const ru = {
   "products.title": "Для реальных моментов сервиса.",
   "products.lead": "Каждая возможность — так, как ею пользуются гости и персонал.",
   "products.details": "Подробнее",
+  "products.viewShot": "Открыть снимок",
+  "products.closeShot": "Закрыть снимок",
 
   "product.online-menu.title": "Онлайн QR-меню",
   "product.online-menu.kicker": "Опыт гостя",
@@ -588,6 +592,8 @@ const uz = {
   "products.lead":
     "Mehmonlar va xodimlar foydalanadigan har bir imkoniyatni haqiqiy ish jarayonida ko'ring.",
   "products.details": "Batafsil",
+  "products.viewShot": "Rasmni ochish",
+  "products.closeShot": "Rasmni yopish",
 
   "product.online-menu.title": "Onlayn QR menyu",
   "product.online-menu.kicker": "Mehmon tajribasi",
