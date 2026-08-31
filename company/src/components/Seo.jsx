@@ -39,7 +39,7 @@ export function Seo() {
     upsertJsonLd("qrmenu-org", {
       "@context": "https://schema.org",
       "@type": "Organization",
-      name: "QRMenu",
+      name: "SmartQr",
       url: site || undefined,
       email: contact.email,
       telephone: contact.phone,
@@ -50,7 +50,7 @@ export function Seo() {
     upsertJsonLd("qrmenu-app", {
       "@context": "https://schema.org",
       "@type": "SoftwareApplication",
-      name: "QRMenu",
+      name: "SmartQr",
       applicationCategory: "BusinessApplication",
       operatingSystem: "Web, iOS, Android",
       description,

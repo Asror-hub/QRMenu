@@ -12,7 +12,7 @@ function QrTableStand({ tableLabel }) {
   return (
     <div className="plat-qr" aria-hidden>
       <div className="plat-qr__plate">
-        <span className="plat-qr__brand">QRMenu</span>
+        <span className="plat-qr__brand">SmartQr</span>
         <div className="plat-qr__code">
           <svg viewBox="0 0 80 80" role="presentation">
             <rect width="80" height="80" fill="#fff" />
@@ -101,7 +101,7 @@ export function Platform() {
   return (
     <section className="section section--platform" id="platform" aria-labelledby="platform-title">
       <div className="section__inner section__inner--wide">
-        <Reveal className="platform-head">
+        <Reveal className="platform-head" variant="up">
           <div className="platform-head__copy">
             <p className="eyebrow">{t("platform.eyebrow")}</p>
             <h2 id="platform-title">{t("platform.title")}</h2>
@@ -117,7 +117,8 @@ export function Platform() {
               <Reveal
                 key={piece.id}
                 className={`plat-row plat-row--${piece.id}${flip ? " plat-row--flip" : ""}`}
-                delay={index * 55}
+                variant={flip ? "right" : "left"}
+                delay={index * 60}
                 role="listitem"
               >
                 <div className="plat-row__copy">

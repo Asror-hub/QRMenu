@@ -30,22 +30,26 @@ const en = {
   "hero.title": "Your dining room, live on every screen.",
   "hero.lead":
     "Guests order from their phone. Staff run the floor on tablet. Owners see it all on desktop.",
-  "hero.ctaWalkthrough": "Schedule a walkthrough",
-  "hero.ctaWatch": "Watch the product",
-  "hero.stageAria": "Product on phone and tablet",
-  "hero.altLaptop": "QRMenu admin dashboard on laptop",
+  "hero.ctaWalkthrough": "Try for free",
+  "hero.ctaWatch": "Watch the product video",
+  "hero.stageAria": "Table QR code and guest menu on phone",
+  "hero.altLaptop": "SmartQr admin dashboard on laptop",
   "hero.altTablet": "Live floor board on tablet",
   "hero.altPhone": "Guest menu on phone",
+  "hero.qrHint": "Scan to order",
 
   // Video
   "video.eyebrow": "Product film",
   "video.title": "See a full service in two minutes.",
+  "video.titleLine2": "",
   "video.lead": "From QR scan to live floor — watch how guests and staff stay on one system.",
-  "video.chrome": "QRMenu · product tour",
+  "video.chrome": "SmartQr · product tour",
   "video.shot1": "Guest scans",
   "video.shot2": "Floor updates",
   "video.shot3": "Kitchen clears",
   "video.hint": "Your product film plays here",
+  "video.altPoster": "Live staff orders on tablet",
+  "video.duration": "2 min",
   "video.play": "Play product video",
   "video.pause": "Pause video",
   "video.soon": "Video coming soon",
@@ -113,7 +117,7 @@ const en = {
   // Ecosystem
   "eco.title": "Perfect ecosystem for restaurants and hotels",
   "eco.lead":
-    "Flexibly customize every QRMenu feature and tool to raise efficiency across your business.",
+    "Flexibly customize every SmartQr feature and tool to raise efficiency across your business.",
   "eco.restaurants.title": "Restaurants",
   "eco.restaurants.text":
     "Launch a branded QR menu, take table orders, and keep the floor in sync from open to close.",
@@ -134,7 +138,7 @@ const en = {
 
   // Platform
   "platform.eyebrow": "How it works",
-  "platform.title": "Where QRMenu runs",
+  "platform.title": "Where SmartQr runs",
   "platform.lede":
     "Mobile for the floor. Web for the office. An online menu for guests — and a QR on every table that ties the order to the right seat.",
   "platform.table12": "Table 12",
@@ -181,10 +185,10 @@ const en = {
   "pricing.notePrefix": "After you choose a package, you will jump to ",
   "pricing.noteSuffix":
     " — Telegram, WhatsApp, phone, or email with a ready message.",
-  "pricing.includesGrow": "Everything in Ordering, plus:",
-  "pricing.includesOps": "Everything in Grow, plus:",
+  "pricing.includesGrow": "Everything in Basic, plus:",
+  "pricing.includesOps": "Everything in Pro, plus:",
 
-  "plan.ordering.name": "Ordering",
+  "plan.ordering.name": "Basic",
   "plan.ordering.tagline": "QR menu & online orders",
   "plan.ordering.feat1": "Branded QR codes for every table",
   "plan.ordering.feat2": "Live online guest menu",
@@ -195,7 +199,7 @@ const en = {
   "plan.ordering.no1": "Website & online reservations",
   "plan.ordering.no2": "Staff manual orders & POS bridge",
 
-  "plan.grow.name": "Grow",
+  "plan.grow.name": "Pro",
   "plan.grow.tagline": "Website & reservations",
   "plan.grow.feat1": "Restaurant website presence",
   "plan.grow.feat2": "Online table reservations",
@@ -205,7 +209,7 @@ const en = {
   "plan.grow.no1": "Staff manual order entry",
   "plan.grow.no2": "POS bridge for the floor team",
 
-  "plan.ops.name": "Ops",
+  "plan.ops.name": "Gold",
   "plan.ops.tagline": "Staff orders & POS",
   "plan.ops.feat1": "Manual order submitting for staff",
   "plan.ops.feat2": "POS / bridge workflows for the floor",
@@ -228,7 +232,7 @@ const en = {
   "faq.a4": "Yes. Use shared standards across sites with local flexibility when needed.",
   "faq.q5": "Can we change plans after we go live?",
   "faq.a5": "Yes. Teams often start small and upgrade as they add locations or integrations.",
-  "seo.title": "QRMenu — QR menu, table ordering, and restaurant operations",
+  "seo.title": "SmartQr — QR menu, table ordering, and restaurant operations",
   "seo.description":
     "QR menu and online ordering for restaurants in Uzbekistan. Guests scan a table code, order, and book. Staff run the floor from one live system.",
   "seo.skip": "Skip to content",
@@ -247,13 +251,13 @@ const en = {
   "contact.whatsapp": "WhatsApp",
   "contact.email": "Email",
   "contact.msg.general":
-    "Hi! I'd like to learn more about QRMenu for my restaurant. Please contact me with more info.",
+    "Hi! I'd like to learn more about SmartQr for my restaurant. Please contact me with more info.",
   "contact.msg.interest":
-    "Hi! I'm interested in the QRMenu {plan} package ({cycle}). {price} Please contact me to get started.",
+    "Hi! I'm interested in the SmartQr {plan} package ({cycle}). {price} Please contact me to get started.",
   "contact.msg.priceMonthly": "Listed price: {price} so'm/mo.",
   "contact.msg.priceYearly": "Listed price: {price} so'm/mo billed yearly.",
-  "contact.subject.general": "QRMenu — request for info",
-  "contact.subject.plan": "QRMenu — {plan} ({billing})",
+  "contact.subject.general": "SmartQr — request for info",
+  "contact.subject.plan": "SmartQr — {plan} ({billing})",
 
   // Footer
   "footer.blurb":
@@ -285,23 +289,27 @@ const ru = {
   "hero.title": "Ваш зал — в реальном времени на каждом экране.",
   "hero.lead":
     "Гости заказывают с телефона. Персонал ведёт зал с планшета. Владельцы видят всё с компьютера.",
-  "hero.ctaWalkthrough": "Записаться на демо",
-  "hero.ctaWatch": "Смотреть продукт",
-  "hero.stageAria": "Продукт на телефоне и планшете",
-  "hero.altLaptop": "Админ-панель QRMenu на ноутбуке",
+  "hero.ctaWalkthrough": "Попробовать бесплатно",
+  "hero.ctaWatch": "Смотреть видео о продукте",
+  "hero.stageAria": "QR-код стола и гостевое меню на телефоне",
+  "hero.altLaptop": "Админ-панель SmartQr на ноутбуке",
   "hero.altTablet": "Живая доска зала на планшете",
   "hero.altPhone": "Гостевое меню на телефоне",
+  "hero.qrHint": "Сканируйте, чтобы заказать",
 
   // Video
   "video.eyebrow": "Видео о продукте",
   "video.title": "Полный сервис за две минуты.",
+  "video.titleLine2": "",
   "video.lead":
     "От сканирования QR до живого зала — как гости и персонал работают в одной системе.",
-  "video.chrome": "QRMenu · обзор продукта",
+  "video.chrome": "SmartQr · обзор продукта",
   "video.shot1": "Гость сканирует",
   "video.shot2": "Зал обновляется",
   "video.shot3": "Кухня закрывает",
   "video.hint": "Здесь будет ваш ролик о продукте",
+  "video.altPoster": "Живые заказы персонала на планшете",
+  "video.duration": "2 мин",
   "video.play": "Смотреть видео",
   "video.pause": "Пауза",
   "video.soon": "Видео скоро появится",
@@ -369,7 +377,7 @@ const ru = {
   // Ecosystem
   "eco.title": "Идеальная экосистема для ресторанов и отелей",
   "eco.lead":
-    "Гибко настраивайте каждую функцию и инструмент QRMenu, чтобы повысить эффективность бизнеса.",
+    "Гибко настраивайте каждую функцию и инструмент SmartQr, чтобы повысить эффективность бизнеса.",
   "eco.restaurants.title": "Рестораны",
   "eco.restaurants.text":
     "Запустите фирменное QR-меню, принимайте заказы со столов и держите зал в синхроне от открытия до закрытия.",
@@ -391,7 +399,7 @@ const ru = {
 
   // Platform
   "platform.eyebrow": "Как это работает",
-  "platform.title": "Где работает QRMenu",
+  "platform.title": "Где работает SmartQr",
   "platform.lede":
     "Мобильное приложение для зала. Веб для офиса. Онлайн-меню для гостей — и QR на каждом столе, который привязывает заказ к нужному месту.",
   "platform.table12": "Стол 12",
@@ -438,10 +446,10 @@ const ru = {
   "pricing.notePrefix": "После выбора пакета вы перейдёте в раздел ",
   "pricing.noteSuffix":
     " — Telegram, WhatsApp, звонок или email с готовым сообщением.",
-  "pricing.includesGrow": "Всё из Ordering, плюс:",
-  "pricing.includesOps": "Всё из Grow, плюс:",
+  "pricing.includesGrow": "Всё из Basic, плюс:",
+  "pricing.includesOps": "Всё из Pro, плюс:",
 
-  "plan.ordering.name": "Ordering",
+  "plan.ordering.name": "Basic",
   "plan.ordering.tagline": "QR-меню и онлайн-заказы",
   "plan.ordering.feat1": "Фирменные QR-коды для каждого стола",
   "plan.ordering.feat2": "Живое онлайн-меню для гостей",
@@ -452,7 +460,7 @@ const ru = {
   "plan.ordering.no1": "Сайт и онлайн-бронирование",
   "plan.ordering.no2": "Ручные заказы персонала и POS-мост",
 
-  "plan.grow.name": "Grow",
+  "plan.grow.name": "Pro",
   "plan.grow.tagline": "Сайт и бронирование",
   "plan.grow.feat1": "Присутствие ресторана в интернете",
   "plan.grow.feat2": "Онлайн-бронирование столов",
@@ -462,7 +470,7 @@ const ru = {
   "plan.grow.no1": "Ручной ввод заказов персоналом",
   "plan.grow.no2": "POS-мост для команды зала",
 
-  "plan.ops.name": "Ops",
+  "plan.ops.name": "Gold",
   "plan.ops.tagline": "Заказы персонала и POS",
   "plan.ops.feat1": "Ручная отправка заказов персоналом",
   "plan.ops.feat2": "POS / мост-процессы для зала",
@@ -486,7 +494,7 @@ const ru = {
   "faq.q5": "Можно ли сменить тариф после запуска?",
   "faq.a5":
     "Да. Команды часто начинают с малого и переходят выше по мере роста точек и интеграций.",
-  "seo.title": "QRMenu — QR-меню, заказы со стола и управление рестораном",
+  "seo.title": "SmartQr — QR-меню, заказы со стола и управление рестораном",
   "seo.description":
     "QR-меню и онлайн-заказы для ресторанов в Узбекистане. Гости сканируют код стола, заказывают и бронируют. Команда ведёт зал в одной системе.",
   "seo.skip": "К содержанию",
@@ -506,13 +514,13 @@ const ru = {
   "contact.whatsapp": "WhatsApp",
   "contact.email": "Email",
   "contact.msg.general":
-    "Здравствуйте! Хочу узнать больше о QRMenu для моего ресторана. Пожалуйста, свяжитесь со мной.",
+    "Здравствуйте! Хочу узнать больше о SmartQr для моего ресторана. Пожалуйста, свяжитесь со мной.",
   "contact.msg.interest":
-    "Здравствуйте! Меня интересует пакет QRMenu {plan} ({cycle}). {price} Пожалуйста, свяжитесь со мной, чтобы начать.",
+    "Здравствуйте! Меня интересует пакет SmartQr {plan} ({cycle}). {price} Пожалуйста, свяжитесь со мной, чтобы начать.",
   "contact.msg.priceMonthly": "Указанная цена: {price} so'm/мес.",
   "contact.msg.priceYearly": "Указанная цена: {price} so'm/мес при годовой оплате.",
-  "contact.subject.general": "QRMenu — запрос информации",
-  "contact.subject.plan": "QRMenu — {plan} ({billing})",
+  "contact.subject.general": "SmartQr — запрос информации",
+  "contact.subject.plan": "SmartQr — {plan} ({billing})",
 
   // Footer
   "footer.blurb":
@@ -531,36 +539,40 @@ const ru = {
 const uz = {
   // Nav
   "nav.demo": "Demo",
-  "nav.products": "Mahsulotlar",
-  "nav.platform": "Platforma",
+  "nav.products": "Maxsulotlar",
+  "nav.platform": "Qanday ishlaydi",
   "nav.pricing": "Narxlar",
   "nav.contact": "Aloqa",
-  "nav.faq": "FAQ",
+  "nav.faq": "Savollar",
   "nav.openMenu": "Menyuni ochish",
   "nav.closeMenu": "Menyuni yopish",
   "nav.contactCta": "Bog'lanish",
 
   // Hero
-  "hero.title": "Zalingiz — har bir ekranda jonli.",
+  "hero.title": "Buyurtma berish endi yanada oson",
   "hero.lead":
-    "Mehmonlar telefonidan buyurtma beradi. Xodimlar planshetda zalni boshqaradi. Egalar hammasi desktopda ko'radi.",
-  "hero.ctaWalkthrough": "Demo uchrashuvni belgilash",
-  "hero.ctaWatch": "Mahsulotni ko'rish",
-  "hero.stageAria": "Mahsulot telefon va planshetda",
-  "hero.altLaptop": "Noutbukdagi QRMenu admin paneli",
-  "hero.altTablet": "Planshetdagi jonli zal doskasi",
+    "SmartQR, ya’ni aqlli QR-kodlar yordamida har bir stol raqamli buyurtma nuqtasiga aylanadi — mehmonlar uchun qulay, xodimlar uchun esa oson.",
+  "hero.ctaWalkthrough": "Bepul sinab ko'rish",
+  "hero.ctaWatch": "Mahsulot videosini ko'rish",
+  "hero.stageAria": "Stol QR kodi va telefondagi mehmon menyusi",
+  "hero.altLaptop": "Noutbukdagi SmartQr admin paneli",
+  "hero.altTablet": "Planshetdagi buyurtmalar paneli",
   "hero.altPhone": "Telefondagi mehmon menyusi",
+  "hero.qrHint": "Skanerlang, buyurtma bering",
 
   // Video
-  "video.eyebrow": "Mahsulot filmi",
-  "video.title": "To'liq xizmatni ikki daqiqada ko'ring.",
+  "video.eyebrow": "Mahsulot taqdimoti",
+  "video.title": "SmartQR qanday ishlashini",
+  "video.titleLine2": "ikki daqiqada ko'rsatib beramiz",
   "video.lead":
-    "QR skandan jonli zalgacha — mehmonlar va xodimlar bitta tizimda qanday ishlashini kuzating.",
-  "video.chrome": "QRMenu · mahsulot turu",
+    "QR-kodni skanerlashdan tortib buyurtmani boshqarishgacha — mehmonlar va xodimlar bitta tizimda qanday ishlashini ko'ring.",
+  "video.chrome": "SmartQr · mahsulot turu",
   "video.shot1": "Mehmon skan qiladi",
   "video.shot2": "Zal yangilanadi",
   "video.shot3": "Oshxona yopadi",
   "video.hint": "Mahsulot filmingiz shu yerda o'ynaydi",
+  "video.altPoster": "Planshetdagi jonli xodim buyurtmalari",
+  "video.duration": "2 daq",
   "video.play": "Mahsulot videosini ko'rish",
   "video.pause": "Videoni pauza qilish",
   "video.soon": "Video tez orada",
@@ -572,8 +584,9 @@ const uz = {
 
   // Products section
   "products.eyebrow": "Mahsulotlarimiz",
-  "products.title": "Haqiqiy xizmat lahzalari uchun.",
-  "products.lead": "Har bir imkoniyat — mehmonlar va xodimlar haqiqatan qanday foydalansa, shunday ko'rsatilgan.",
+  "products.title": "Restoraningizdagi har bir jarayon uchun",
+  "products.lead":
+    "Mehmonlar va xodimlar foydalanadigan har bir imkoniyatni haqiqiy ish jarayonida ko'ring.",
   "products.details": "Batafsil",
 
   "product.online-menu.title": "Onlayn QR menyu",
@@ -628,7 +641,7 @@ const uz = {
   // Ecosystem
   "eco.title": "Restoranlar va mehmonxonalar uchun mukammal ekotizim",
   "eco.lead":
-    "Biznesingiz samaradorligini oshirish uchun har bir QRMenu funksiyasi va vositasini moslashuvchan sozlang.",
+    "Biznesingiz samaradorligini oshirish uchun har bir SmartQr funksiyasi va vositasini moslashuvchan sozlang.",
   "eco.restaurants.title": "Restoranlar",
   "eco.restaurants.text":
     "Brendlangan QR menyuni ishga tushiring, stol buyurtmalarini qabul qiling va zalni ochilishdan yopilishgacha sinxron saqlang.",
@@ -650,7 +663,7 @@ const uz = {
 
   // Platform
   "platform.eyebrow": "Qanday ishlaydi",
-  "platform.title": "QRMenu qayerda ishlaydi",
+  "platform.title": "SmartQr qayerda ishlaydi",
   "platform.lede":
     "Zal uchun mobil. Ofis uchun veb. Mehmonlar uchun onlayn menyu — va har bir stolda buyurtmani to'g'ri o'ringa bog'laydigan QR.",
   "platform.table12": "Stol 12",
@@ -697,10 +710,10 @@ const uz = {
   "pricing.notePrefix": "Paketni tanlaganingizdan so'ng ",
   "pricing.noteSuffix":
     " bo'limiga o'tasiz — Telegram, WhatsApp, telefon yoki email tayyor xabar bilan.",
-  "pricing.includesGrow": "Ordering dagi hammasi, qo'shimcha:",
-  "pricing.includesOps": "Grow dagi hammasi, qo'shimcha:",
+  "pricing.includesGrow": "Basic dagi hammasi, qo'shimcha:",
+  "pricing.includesOps": "Pro dagi hammasi, qo'shimcha:",
 
-  "plan.ordering.name": "Ordering",
+  "plan.ordering.name": "Basic",
   "plan.ordering.tagline": "QR menyu va onlayn buyurtmalar",
   "plan.ordering.feat1": "Har bir stol uchun brendlangan QR kodlar",
   "plan.ordering.feat2": "Jonli onlayn mehmon menyusi",
@@ -711,7 +724,7 @@ const uz = {
   "plan.ordering.no1": "Veb-sayt va onlayn bron",
   "plan.ordering.no2": "Xodimlar qo'lda buyurtmalari va POS bridge",
 
-  "plan.grow.name": "Grow",
+  "plan.grow.name": "Pro",
   "plan.grow.tagline": "Veb-sayt va bronlar",
   "plan.grow.feat1": "Restoran veb-mavjudligi",
   "plan.grow.feat2": "Onlayn stol bronlari",
@@ -721,7 +734,7 @@ const uz = {
   "plan.grow.no1": "Xodimlar qo'lda buyurtma kiritishi",
   "plan.grow.no2": "Zal jamoasi uchun POS bridge",
 
-  "plan.ops.name": "Ops",
+  "plan.ops.name": "Gold",
   "plan.ops.tagline": "Xodim buyurtmalari va POS",
   "plan.ops.feat1": "Xodimlar uchun qo'lda buyurtma yuborish",
   "plan.ops.feat2": "Zal uchun POS / bridge jarayonlari",
@@ -745,7 +758,7 @@ const uz = {
   "faq.q5": "Ishga tushgandan keyin tarifni o'zgartirish mumkinmi?",
   "faq.a5":
     "Ha. Jamoalar ko'pincha kichikdan boshlaydi va filial yoki integratsiyalar qo'shilganda yuqoriroq tarifga o'tadi.",
-  "seo.title": "QRMenu — QR menyu, stol buyurtmalari va restoran boshqaruvi",
+  "seo.title": "SmartQr — QR menyu, stol buyurtmalari va restoran boshqaruvi",
   "seo.description":
     "O‘zbekiston restoranlari uchun QR menyu va onlayn buyurtma. Mehmonlar stol kodini skanerlaydi, buyurtma beradi va bron qiladi. Jamoa zalni bitta tizimda boshqaradi.",
   "seo.skip": "Tarkibga o‘tish",
@@ -765,13 +778,13 @@ const uz = {
   "contact.whatsapp": "WhatsApp",
   "contact.email": "Email",
   "contact.msg.general":
-    "Salom! Restoranim uchun QRMenu haqida ko'proq bilmoqchiman. Iltimos, men bilan bog'laning.",
+    "Salom! Restoranim uchun SmartQr haqida ko'proq bilmoqchiman. Iltimos, men bilan bog'laning.",
   "contact.msg.interest":
-    "Salom! QRMenu {plan} paketiga ({cycle}) qiziqaman. {price} Boshlash uchun iltimos men bilan bog'laning.",
+    "Salom! SmartQr {plan} paketiga ({cycle}) qiziqaman. {price} Boshlash uchun iltimos men bilan bog'laning.",
   "contact.msg.priceMonthly": "Ko'rsatilgan narx: {price} so'm/oy.",
   "contact.msg.priceYearly": "Ko'rsatilgan narx: {price} so'm/oy, yillik to'lov.",
-  "contact.subject.general": "QRMenu — ma'lumot so'rovi",
-  "contact.subject.plan": "QRMenu — {plan} ({billing})",
+  "contact.subject.general": "SmartQr — ma'lumot so'rovi",
+  "contact.subject.plan": "SmartQr — {plan} ({billing})",
 
   // Footer
   "footer.blurb":

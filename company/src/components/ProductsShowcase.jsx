@@ -24,7 +24,7 @@ export function ProductsShowcase() {
   return (
     <section className="section section--products" id="product" aria-labelledby="products-title">
       <div className="section__inner section__inner--wide">
-        <Reveal className="section__header section__header--center products-intro">
+        <Reveal className="section__header section__header--center products-intro" variant="up">
           <p className="eyebrow">{t("products.eyebrow")}</p>
           <h2 id="products-title">{t("products.title")}</h2>
           <p>{t("products.lead")}</p>
@@ -37,7 +37,12 @@ export function ProductsShowcase() {
             const prefix = `product.${product.i18n}`;
             const points = [1, 2, 3, 4].map((i) => t(`${prefix}.p${i}`));
             return (
-              <Reveal key={product.id} className="product-panel-wrap" delay={index * 35}>
+              <Reveal
+                key={product.id}
+                className="product-panel-wrap"
+                variant={flip ? "right" : "left"}
+                delay={index * 40}
+              >
                 <article
                   className={`product-panel product-panel--${product.accent}${flip ? " product-panel--flip" : ""}`}
                   aria-labelledby={`product-${product.id}-title`}

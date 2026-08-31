@@ -9,21 +9,21 @@ export function FAQ() {
   return (
     <section className="section section--faq" id="faq" aria-labelledby="faq-title">
       <div className="section__inner section__inner--faq">
-        <Reveal className="section__header section__header--center">
+        <Reveal className="section__header section__header--center" variant="up">
           <p className="eyebrow">{t("faq.eyebrow")}</p>
           <h2 id="faq-title">{t("faq.title")}</h2>
           <p>{t("faq.lead")}</p>
         </Reveal>
-        <Reveal className="faq-wrap" delay={80}>
+        <div className="faq-wrap">
           <div className="faq-list">
-            {FAQ_IDS.map((id) => (
-              <details key={id} className="faq-item">
+            {FAQ_IDS.map((id, index) => (
+              <Reveal as="details" key={id} className="faq-item" delay={index * 80}>
                 <summary>{t(`faq.${id}`)}</summary>
                 <p>{t(`faq.a${id.slice(1)}`)}</p>
-              </details>
+              </Reveal>
             ))}
           </div>
-        </Reveal>
+        </div>
       </div>
     </section>
   );

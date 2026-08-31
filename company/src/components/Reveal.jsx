@@ -1,6 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 
-export function Reveal({ children, className = "", delay = 0, style: styleProp, role, ...rest }) {
+export function Reveal({
+  as: Comp = "div",
+  variant = "up",
+  children,
+  className = "",
+  delay = 0,
+  style: styleProp,
+  role,
+  ...rest
+}) {
   const ref = useRef(null);
   const [visible, setVisible] = useState(false);
 
@@ -14,9 +23,12 @@ export function Reveal({ children, className = "", delay = 0, style: styleProp, 
     }
     const ob = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) setVisible(true);
+        if (entry.isIntersecting) {
+          setVisible(true);
+          ob.unobserve(el);
+        }
       },
-      { rootMargin: "0px 0px -10% 0px", threshold: 0.06 }
+      { rootMargin: "0px 0px -14% 0px", threshold: 0.08 }
     );
     ob.observe(el);
     return () => ob.disconnect();
@@ -25,14 +37,14 @@ export function Reveal({ children, className = "", delay = 0, style: styleProp, 
   const style = { ...styleProp, ...(delay ? { transitionDelay: `${delay}ms` } : {}) };
 
   return (
-    <div
+    <Comp
       ref={ref}
       {...rest}
       role={role}
-      className={`reveal${visible ? " reveal--visible" : ""}${className ? ` ${className}` : ""}`.trim()}
+      className={`reveal reveal--${variant}${visible ? " reveal--visible" : ""}${className ? ` ${className}` : ""}`.trim()}
       style={style}
     >
       {children}
-    </div>
+    </Comp>
   );
 }

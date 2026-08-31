@@ -40,14 +40,14 @@ export function Ecosystem() {
   return (
     <section className="section section--ecosystem" id="ecosystem" aria-labelledby="ecosystem-title">
       <div className="section__inner section__inner--wide">
-        <Reveal className="section__header section__header--center ecosystem-intro">
+        <Reveal className="section__header section__header--center ecosystem-intro" variant="up">
           <h2 id="ecosystem-title">{t("eco.title")}</h2>
           <p>{t("eco.lead")}</p>
         </Reveal>
 
         <div className="eco-grid">
           {venues.map((venue, index) => (
-            <Reveal key={venue.id} className="eco-card" delay={index * 40}>
+            <Reveal key={venue.id} className="eco-card" variant="scale" delay={index * 70}>
               <div className="eco-card__media">
                 <img
                   src={venue.image}

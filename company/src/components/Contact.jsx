@@ -85,14 +85,14 @@ export function Contact() {
   return (
     <section className="section section--contact" id="contact" aria-labelledby="contact-title">
       <div className="section__inner">
-        <Reveal className="section__header section__header--center contact-intro">
+        <Reveal className="section__header section__header--center contact-intro" variant="up">
           <p className="eyebrow">{t("contact.eyebrow")}</p>
           <h2 id="contact-title">{t("contact.title")}</h2>
           <p>{t("contact.lead")}</p>
         </Reveal>
 
         {selection ? (
-          <Reveal className="contact-selected" delay={30}>
+          <Reveal className="contact-selected" variant="scale" delay={30}>
             <p className="contact-selected__label">{t("contact.selectedPackage")}</p>
             <strong>
               {planName} · {selection.billing === "yearly" ? t("contact.yearly") : t("contact.monthly")}
@@ -108,7 +108,7 @@ export function Contact() {
 
         <div className="contact-grid">
           {channels.map((channel, index) => (
-            <Reveal key={channel.id} delay={50 + index * 40}>
+            <Reveal key={channel.id} variant="up" delay={50 + index * 70}>
               <a
                 className={`contact-card contact-card--${channel.id}`}
                 href={channel.href}
@@ -119,8 +119,11 @@ export function Contact() {
                   <ChannelIcon type={channel.id} />
                 </span>
                 <span className="contact-card__body">
-                  <span className="contact-card__hint">{channel.hint}</span>
-                  <strong>{channel.label}</strong>
+                  <strong>
+                    {channel.id === "telegram" || channel.id === "whatsapp"
+                      ? channel.hint
+                      : channel.label}
+                  </strong>
                 </span>
                 <span className="contact-card__go" aria-hidden>
                   →

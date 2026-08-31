@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { Phone, ScreenGuestMenu } from "./Devices.jsx";
+import { Reveal } from "./Reveal.jsx";
 import { useLanguage } from "../context/LanguageContext.jsx";
+import shotVideo from "../assets/images/video_img.png";
 
 /**
  * Drop your explainer at /public/media/product-demo.mp4
@@ -42,29 +43,23 @@ export function VideoStage() {
 
   return (
     <section className={`video-stage${playing ? " is-playing" : ""}`} id="demo" aria-labelledby="demo-title">
-      <div className="video-stage__glow" aria-hidden />
+      <div className="video-stage__wash" aria-hidden />
+
       <div className="video-stage__inner">
-        <div className="video-stage__intro">
+        <Reveal className="video-stage__intro" variant="up">
           <p className="eyebrow">{t("video.eyebrow")}</p>
-          <h2 id="demo-title">{t("video.title")}</h2>
+          <h2 id="demo-title">
+            <span className="video-stage__title-line">{t("video.title")}</span>
+            {t("video.titleLine2") ? (
+              <span className="video-stage__title-line">{t("video.titleLine2")}</span>
+            ) : null}
+          </h2>
           <p>{t("video.lead")}</p>
-        </div>
+        </Reveal>
 
-        <div className="video-stage__theater">
-          <div className="video-stage__float video-stage__float--left" aria-hidden>
-            <Phone className="video-stage__phone">
-              <ScreenGuestMenu />
-            </Phone>
-          </div>
-
+        <Reveal className="video-stage__theater" variant="scale" delay={120}>
+          <div className="video-stage__glow" aria-hidden />
           <div className="video-stage__frame">
-            <div className="video-stage__chrome" aria-hidden>
-              <span />
-              <span />
-              <span />
-              <em>{t("video.chrome")}</em>
-            </div>
-
             <div className="video-stage__viewport">
               {MEDIA.ready ? (
                 <video
@@ -76,27 +71,17 @@ export function VideoStage() {
                   preload="metadata"
                   controls={playing}
                 />
-              ) : (
-                <div className="video-stage__placeholder" aria-hidden>
-                  <div className="video-stage__placeholder-ui">
-                    <div className="video-stage__storyboard">
-                      <div className="video-stage__shot">
-                        <span>01</span>
-                        <strong>{t("video.shot1")}</strong>
-                      </div>
-                      <div className="video-stage__shot is-mid">
-                        <span>02</span>
-                        <strong>{t("video.shot2")}</strong>
-                      </div>
-                      <div className="video-stage__shot">
-                        <span>03</span>
-                        <strong>{t("video.shot3")}</strong>
-                      </div>
-                    </div>
-                    <p className="video-stage__hint">{t("video.hint")}</p>
-                  </div>
-                </div>
-              )}
+              ) : null}
+
+              <img
+                className="video-stage__still"
+                src={shotVideo}
+                alt={t("video.altPoster")}
+                loading="lazy"
+                decoding="async"
+              />
+
+              <div className="video-stage__scrim" aria-hidden />
 
               <button
                 type="button"
@@ -122,18 +107,23 @@ export function VideoStage() {
                   )}
                 </span>
               </button>
+
+              <div className="video-stage__meta">
+                <span>{t("video.chrome")}</span>
+                <em>{MEDIA.ready ? t("video.duration") : t("video.soon")}</em>
+              </div>
             </div>
           </div>
-        </div>
+        </Reveal>
 
         <ol className="video-stage__rail">
           {RAIL_KEYS.map((key, i) => (
-            <li key={key}>
+            <Reveal as="li" key={key} delay={80 + i * 90}>
               <span className="video-stage__rail-dot" aria-hidden>
                 {String(i + 1).padStart(2, "0")}
               </span>
               {t(key)}
-            </li>
+            </Reveal>
           ))}
         </ol>
       </div>

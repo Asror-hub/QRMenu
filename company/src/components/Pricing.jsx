@@ -16,13 +16,13 @@ export function Pricing() {
   return (
     <section className="section section--pricing" id="pricing" aria-labelledby="pricing-title">
       <div className="section__inner section__inner--wide">
-        <Reveal className="section__header section__header--center">
+        <Reveal className="section__header section__header--center" variant="up">
           <p className="eyebrow">{t("pricing.eyebrow")}</p>
           <h2 id="pricing-title">{t("pricing.title")}</h2>
           <p>{t("pricing.lead")}</p>
         </Reveal>
 
-        <Reveal className="pricing__billing" delay={40}>
+        <Reveal className="pricing__billing" variant="scale" delay={60}>
           <div className="pricing__toggle" role="group" aria-label="Billing period">
             <button
               type="button"
@@ -51,7 +51,7 @@ export function Pricing() {
             const name = t(`plan.${plan.id}.name`);
             const tagline = t(`plan.${plan.id}.tagline`);
             return (
-              <Reveal key={plan.id} delay={index * 70}>
+              <Reveal key={plan.id} variant="scale" delay={index * 90}>
                 <article
                   className={`pricing__card ${plan.variant}`.trim()}
                   aria-labelledby={`plan-${plan.id}-title`}
@@ -136,7 +136,7 @@ export function Pricing() {
           })}
         </div>
 
-        <Reveal className="pricing__note" delay={220}>
+        <Reveal className="pricing__note" variant="up" delay={160}>
           <p>
             {t("pricing.notePrefix")}
             <a href="#contact">{t("nav.contact")}</a>

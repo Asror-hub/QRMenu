@@ -1,4 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
-  <rect width="32" height="32" rx="7" fill="#0B1F3A"/>
-  <path d="M8 9h5v14H8V9zm6.5 0H19v9h-4.5V9zM21 9h3v14h-3V9z" fill="#2B6CFF"/>
+  <rect width="32" height="32" rx="8" fill="#0B1F3A"/>
+  <rect x="5" y="5" width="9" height="9" rx="1.35" fill="#fff"/>
+  <rect x="6.55" y="6.55" width="5.9" height="5.9" rx="0.7" fill="#0B1F3A"/>
+  <rect x="8.05" y="8.05" width="2.9" height="2.9" rx="0.4" fill="#2B6CFF"/>
+  <rect x="18" y="5" width="9" height="9" rx="1.35" fill="#fff"/>
+  <rect x="19.55" y="6.55" width="5.9" height="5.9" rx="0.7" fill="#0B1F3A"/>
+  <rect x="21.05" y="8.05" width="2.9" height="2.9" rx="0.4" fill="#2B6CFF"/>
+  <rect x="5" y="18" width="9" height="9" rx="1.35" fill="#fff"/>
+  <rect x="6.55" y="19.55" width="5.9" height="5.9" rx="0.7" fill="#0B1F3A"/>
+  <rect x="8.05" y="21.05" width="2.9" height="2.9" rx="0.4" fill="#2B6CFF"/>
+  <rect x="18.15" y="18.15" width="2.35" height="2.35" rx="0.4" fill="#fff"/>
+  <rect x="21.55" y="18.15" width="2.35" height="2.35" rx="0.4" fill="#fff"/>
+  <rect x="24.95" y="18.15" width="2.35" height="2.35" rx="0.4" fill="#fff"/>
+  <rect x="18.15" y="21.55" width="2.35" height="2.35" rx="0.4" fill="#fff"/>
+  <rect x="24.95" y="21.55" width="2.35" height="2.35" rx="0.4" fill="#fff"/>
+  <rect x="18.15" y="24.95" width="2.35" height="2.35" rx="0.4" fill="#fff"/>
+  <rect x="21.55" y="24.95" width="2.35" height="2.35" rx="0.4" fill="#fff"/>
+  <rect x="5" y="15.25" width="22" height="1.55" rx="0.75" fill="#2B6CFF"/>
 </svg>

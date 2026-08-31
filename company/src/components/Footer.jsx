@@ -1,3 +1,5 @@
+import { Reveal } from "./Reveal.jsx";
+import { BrandMark, BrandWordmark } from "./BrandMark.jsx";
 import { useLanguage } from "../context/LanguageContext.jsx";
 
 const year = new Date().getFullYear();
@@ -7,13 +9,11 @@ export function Footer() {
 
   return (
     <footer className="site-footer">
-      <div className="footer__inner">
+      <Reveal className="footer__inner">
         <div className="footer__brand">
           <a className="brand" href="#top">
-            <span className="brand__mark" aria-hidden>
-              Q<span>M</span>
-            </span>
-            <span className="brand__wordmark">QRMenu</span>
+            <BrandMark />
+            <BrandWordmark />
           </a>
           <p>{t("footer.blurb")}</p>
         </div>
@@ -57,12 +57,15 @@ export function Footer() {
             <li>
               <a href="#ecosystem">{t("footer.whoFor")}</a>
             </li>
+            <li>
+              <a href="/privacy.html">{t("footer.privacy")}</a>
+            </li>
           </ul>
         </div>
-      </div>
-      <p className="footer__bottom">
-        © {year} QRMenu. {t("footer.rights")}
-      </p>
+      </Reveal>
+      <Reveal as="p" className="footer__bottom" delay={140}>
+        © {year} SmartQr. {t("footer.rights")}
+      </Reveal>
     </footer>
   );
 }

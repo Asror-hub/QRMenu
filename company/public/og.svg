@@ -1,6 +1,26 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
   <rect width="1200" height="630" fill="#0b1f3a"/>
   <rect x="0" y="0" width="8" height="630" fill="#2b6cff"/>
-  <text x="80" y="250" fill="#ffffff" font-family="Georgia, serif" font-size="86" font-weight="700">QRMenu</text>
-  <text x="80" y="330" fill="#9fb0c8" font-family="Arial, sans-serif" font-size="32">QR menus, table orders, and restaurant operations</text>
+  <g transform="translate(80, 198)">
+    <rect width="96" height="96" rx="24" fill="#13233a"/>
+    <rect x="15" y="15" width="27" height="27" rx="4" fill="#fff"/>
+    <rect x="19.65" y="19.65" width="17.7" height="17.7" rx="2.1" fill="#13233a"/>
+    <rect x="24.15" y="24.15" width="8.7" height="8.7" rx="1.2" fill="#2B6CFF"/>
+    <rect x="54" y="15" width="27" height="27" rx="4" fill="#fff"/>
+    <rect x="58.65" y="19.65" width="17.7" height="17.7" rx="2.1" fill="#13233a"/>
+    <rect x="63.15" y="24.15" width="8.7" height="8.7" rx="1.2" fill="#2B6CFF"/>
+    <rect x="15" y="54" width="27" height="27" rx="4" fill="#fff"/>
+    <rect x="19.65" y="58.65" width="17.7" height="17.7" rx="2.1" fill="#13233a"/>
+    <rect x="24.15" y="63.15" width="8.7" height="8.7" rx="1.2" fill="#2B6CFF"/>
+    <rect x="54.45" y="54.45" width="7.05" height="7.05" rx="1.2" fill="#fff"/>
+    <rect x="64.65" y="54.45" width="7.05" height="7.05" rx="1.2" fill="#fff"/>
+    <rect x="74.85" y="54.45" width="7.05" height="7.05" rx="1.2" fill="#fff"/>
+    <rect x="54.45" y="64.65" width="7.05" height="7.05" rx="1.2" fill="#fff"/>
+    <rect x="74.85" y="64.65" width="7.05" height="7.05" rx="1.2" fill="#fff"/>
+    <rect x="54.45" y="74.85" width="7.05" height="7.05" rx="1.2" fill="#fff"/>
+    <rect x="64.65" y="74.85" width="7.05" height="7.05" rx="1.2" fill="#fff"/>
+    <rect x="15" y="45.75" width="66" height="4.65" rx="2.25" fill="#2B6CFF"/>
+  </g>
+  <text x="204" y="250" fill="#ffffff" font-family="Georgia, serif" font-size="86" font-weight="700">SmartQr</text>
+  <text x="80" y="360" fill="#9fb0c8" font-family="Arial, sans-serif" font-size="32">QR menus, table orders, and restaurant operations</text>
 </svg>

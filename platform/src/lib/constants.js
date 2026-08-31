@@ -1,7 +1,7 @@
 export const PLANS = [
-  { id: "ordering", label: "Ordering", blurb: "QR + online orders" },
-  { id: "grow", label: "Grow", blurb: "+ website & reservations" },
-  { id: "ops", label: "Ops", blurb: "+ staff orders & POS" },
+  { id: "ordering", label: "Basic", blurb: "QR + online orders" },
+  { id: "grow", label: "Pro", blurb: "+ website & reservations" },
+  { id: "ops", label: "Gold", blurb: "+ staff orders & POS" },
 ];
 
 export const STATUSES = [

@@ -1,27 +1,39 @@
 import { useEffect, useRef, useState } from "react";
 import { useLanguage } from "../context/LanguageContext.jsx";
 import { LANG_OPTIONS } from "../i18n";
+import { BrandMark, BrandWordmark } from "./BrandMark.jsx";
 
 const NAV_LINKS = [
   { href: "#demo", key: "nav.demo" },
   { href: "#product", key: "nav.products" },
   { href: "#platform", key: "nav.platform" },
   { href: "#pricing", key: "nav.pricing" },
-  { href: "#contact", key: "nav.contact" },
   { href: "#faq", key: "nav.faq" },
 ];
 
 export function Header() {
   const { lang, setLang, t } = useLanguage();
   const [solid, setSolid] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const langRef = useRef(null);
   const currentLang = LANG_OPTIONS.find((o) => o.id === lang) || LANG_OPTIONS[0];
 
   useEffect(() => {
-    const onScroll = () => setSolid(window.scrollY > 18);
-    onScroll();
+    let ticking = false;
+    const update = () => {
+      setSolid(window.scrollY > 18);
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      setProgress(max > 0 ? Math.min(1, window.scrollY / max) : 0);
+      ticking = false;
+    };
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(update);
+    };
+    update();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
@@ -75,11 +87,9 @@ export function Header() {
     <header className={`site-header${solid ? " site-header--solid" : ""}${menuOpen ? " site-header--menu-open" : ""}`}>
       <div className="site-header__track">
         <div className="site-header__inner">
-          <a className="brand" href="#top" aria-label="QRMenu home" onClick={closeMenu}>
-            <span className="brand__mark" aria-hidden>
-              Q<span>M</span>
-            </span>
-            <span className="brand__wordmark">QRMenu</span>
+          <a className="brand" href="#top" aria-label="SmartQr home" onClick={closeMenu}>
+            <BrandMark />
+            <BrandWordmark />
           </a>
 
           <button
@@ -163,6 +173,7 @@ export function Header() {
           </nav>
         </div>
       </div>
+      <div className="scroll-progress" style={{ transform: `scaleX(${progress})` }} aria-hidden />
     </header>
   );
 }
