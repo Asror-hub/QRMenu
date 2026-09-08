@@ -1,43 +1,136 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { supabase } from "../services/supabase";
+import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { useLanguage } from "../context/LanguageContext";
+import { normalizePhoneToE164 } from "../utils/phone";
 
-const Login = () => {
+async function ensureOwnerRestaurant({ userId, name, email, phone }) {
+  const { data: existing, error: existingError } = await supabase
+    .from("restaurants")
+    .select("id")
+    .eq("owner_id", userId)
+    .limit(1);
+
+  if (existingError) return false;
+  if (existing?.length) return true;
+
+  const { error: insertError } = await supabase.from("restaurants").insert({
+    name,
+    email,
+    phone: phone ?? null,
+    owner_id: userId
+  });
+
+  return !insertError;
+}
+
+const Register = () => {
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { t } = useLanguage();
+  const [restaurantName, setRestaurantName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  if (!authLoading && user) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
     setLoading(true);
 
+    const name = restaurantName.trim();
     const cleanedEmail = email.trim().toLowerCase();
-    if (!cleanedEmail) {
+    const typedPhone = phone.trim();
+
+    if (!name) {
+      setLoading(false);
+      setError(t("restaurantNameRequired"));
+      return;
+    }
+    if (!cleanedEmail || !cleanedEmail.includes("@")) {
       setLoading(false);
       setError(t("validEmailRequired"));
       return;
     }
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({
+    let contactPhone = null;
+    if (typedPhone) {
+      contactPhone = normalizePhoneToE164(typedPhone);
+      if (!contactPhone) {
+        setLoading(false);
+        setError(t("validPhoneRequired"));
+        return;
+      }
+    }
+
+    if (password.length < 6) {
+      setLoading(false);
+      setError(t("passwordMinLength"));
+      return;
+    }
+    if (password !== confirmPassword) {
+      setLoading(false);
+      setError(t("passwordMismatch"));
+      return;
+    }
+
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email: cleanedEmail,
       password
     });
 
-    setLoading(false);
-
-    if (signInError) {
-      setError(signInError.message);
+    if (signUpError) {
+      setLoading(false);
+      setError(signUpError.message || t("signupFailed"));
       return;
     }
 
+    if (signUpData.user?.identities && signUpData.user.identities.length === 0) {
+      setLoading(false);
+      setError(t("emailTaken"));
+      return;
+    }
+
+    let session = signUpData.session;
+    if (!session) {
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: cleanedEmail,
+        password
+      });
+      if (signInError || !signInData.session) {
+        setLoading(false);
+        setError(t("confirmEmail"));
+        return;
+      }
+      session = signInData.session;
+    }
+
+    const created = await ensureOwnerRestaurant({
+      userId: session.user.id,
+      name,
+      email: cleanedEmail,
+      phone: contactPhone
+    });
+
+    if (!created) {
+      await supabase.auth.signOut();
+      setLoading(false);
+      setError(t("signupFailed"));
+      return;
+    }
+
+    setLoading(false);
     navigate("/dashboard");
   };
 
@@ -52,16 +145,37 @@ const Login = () => {
       </ThemeToggle>
       <Card>
         <Brand>{t("brandAdmin")}</Brand>
-        <Title>{t("loginWelcome")}</Title>
-        <Subtitle>{t("loginSubtitle")}</Subtitle>
+        <Title>{t("registerTitle")}</Title>
+        <Subtitle>{t("registerSubtitle")}</Subtitle>
         <Form onSubmit={handleSubmit}>
+          <Label>
+            {t("restaurantName")}
+            <Input
+              type="text"
+              value={restaurantName}
+              onChange={(event) => setRestaurantName(event.target.value)}
+              autoComplete="organization"
+              required
+            />
+          </Label>
           <Label>
             {t("email")}
             <Input
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
+              autoComplete="email"
               required
+            />
+          </Label>
+          <Label>
+            {t("phone")} ({t("optional")})
+            <Input
+              type="tel"
+              value={phone}
+              onChange={(event) => setPhone(event.target.value)}
+              placeholder={t("phonePlaceholder")}
+              autoComplete="tel"
             />
           </Label>
           <Label>
@@ -70,17 +184,28 @@ const Login = () => {
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
+              autoComplete="new-password"
+              required
+            />
+          </Label>
+          <Label>
+            {t("confirmPassword")}
+            <Input
+              type="password"
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              autoComplete="new-password"
               required
             />
           </Label>
           {error && <ErrorText>{error}</ErrorText>}
           <Button type="submit" disabled={loading}>
-            {loading ? t("signingIn") : t("loginButton")}
+            {loading ? t("creating") : t("registerButton")}
           </Button>
         </Form>
         <Footer>
-          {t("noAccount")}{" "}
-          <FooterLink to="/register">{t("createOne")}</FooterLink>
+          {t("alreadyHaveAccount")}{" "}
+          <FooterLink to="/login">{t("signIn")}</FooterLink>
         </Footer>
       </Card>
     </Shell>
@@ -202,4 +327,4 @@ const FooterLink = styled(Link)`
   }
 `;
 
-export default Login;
+export default Register;

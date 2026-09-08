@@ -1,25 +1,13 @@
 import { useContext, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import styled from "styled-components";
+import styled, { css, keyframes } from "styled-components";
 import { QRCodeCanvas } from "qrcode.react";
 import { supabase } from "../services/supabase";
 import { useRestaurant } from "../context/RestaurantContext";
 import { useLanguage } from "../context/LanguageContext";
 import { TopBarSlotsContext } from "../components/Layout";
 import { cardPanel } from "../styles/cards";
-
-const CUSTOMER_PORT = 5174;
-
-function getCustomerPort() {
-  const url = import.meta.env.VITE_CUSTOMER_APP_URL;
-  if (!url) return CUSTOMER_PORT;
-  try {
-    const p = new URL(url).port;
-    return p ? parseInt(p, 10) : CUSTOMER_PORT;
-  } catch {
-    return CUSTOMER_PORT;
-  }
-}
+import { getCustomerAppBaseUrl, getCustomerDevPort } from "../utils/customerAppUrl";
 
 function useLocalNetworkBaseUrl() {
   const [networkBaseUrl, setNetworkBaseUrl] = useState(null);
@@ -39,7 +27,7 @@ function useLocalNetworkBaseUrl() {
       if (match) {
         const ip = match[1];
         if (!ip.startsWith("127.")) {
-          const port = getCustomerPort();
+          const port = getCustomerDevPort();
           setNetworkBaseUrl(`http://${ip}:${port}`);
           pc.close();
         }
@@ -69,6 +57,10 @@ const Tables = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTableId, setEditingTableId] = useState(null);
   const [copiedTableId, setCopiedTableId] = useState(null);
+  const [tablePendingDelete, setTablePendingDelete] = useState(null);
+  const [removingId, setRemovingId] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const networkBaseUrl = useLocalNetworkBaseUrl();
 
   const loadTables = async () => {
@@ -133,39 +125,52 @@ const Tables = () => {
     setTableName("");
   };
 
-  const handleDelete = async (id) => {
-    await supabase.from("tables").delete().eq("id", id);
-    loadTables();
+  const closeDeleteConfirm = () => {
+    if (deleting) return;
+    setTablePendingDelete(null);
   };
 
-  const envBaseUrl = (import.meta.env.VITE_CUSTOMER_APP_URL || "").replace(/\/$/, "");
-  const hostname =
-    typeof window !== "undefined" ? window.location.hostname : "";
-  const isLoopback = hostname === "localhost" || hostname === "127.0.0.1";
-  const isPrivateLan =
-    /^(10\.|172\.(1[6-9]|2\d|3[0-1])\.|192\.168\.)/.test(hostname);
+  const confirmDeleteTable = async () => {
+    if (!tablePendingDelete || !restaurant?.id) return;
+    const table = tablePendingDelete;
+    setDeleting(true);
+    setRemovingId(table.id);
+    setErrorMessage("");
 
-  // Prefer the live LAN address so QR codes work after Wi‑Fi/IP changes.
-  // Env URL is for deployed customer apps (https://...), not stale local IPs.
-  const envIsDeployed =
-    !!envBaseUrl &&
-    (() => {
-      try {
-        const host = new URL(envBaseUrl).hostname;
-        return host !== "localhost" && host !== "127.0.0.1" &&
-          !/^(10\.|172\.(1[6-9]|2\d|3[0-1])\.|192\.168\.)/.test(host);
-      } catch {
-        return false;
-      }
-    })();
+    const { error: unlinkError } = await supabase
+      .from("orders")
+      .update({ table_id: null })
+      .eq("table_id", table.id);
 
-  const baseUrl = envIsDeployed
-    ? envBaseUrl
-    : (isLoopback && networkBaseUrl) ||
-      (isPrivateLan ? `http://${hostname}:${getCustomerPort()}` : null) ||
-      networkBaseUrl ||
-      envBaseUrl ||
-      `http://localhost:${getCustomerPort()}`;
+    if (unlinkError) {
+      setDeleting(false);
+      setRemovingId(null);
+      setErrorMessage(unlinkError.message || t("couldNotDeleteTable"));
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("tables")
+      .delete()
+      .eq("id", table.id)
+      .eq("restaurant_id", restaurant.id)
+      .select("id");
+
+    if (error || !data?.length) {
+      setDeleting(false);
+      setRemovingId(null);
+      setErrorMessage(error?.message || t("couldNotDeleteTable"));
+      return;
+    }
+
+    setTablePendingDelete(null);
+    await new Promise((resolve) => window.setTimeout(resolve, 320));
+    setTables((prev) => prev.filter((item) => item.id !== table.id));
+    setDeleting(false);
+    setRemovingId(null);
+  };
+
+  const baseUrl = getCustomerAppBaseUrl(networkBaseUrl);
 
   const buildUrl = (tableId) =>
     restaurant?.id ? `${baseUrl}/r/${restaurant.id}/t/${tableId}` : "";
@@ -216,6 +221,8 @@ const Tables = () => {
           </AddTableButton>,
           topBarActionsEl
         )}
+
+      {errorMessage ? <ErrorBanner>{errorMessage}</ErrorBanner> : null}
 
       {isFormOpen && (
         <ModalOverlay onClick={closeForm}>
@@ -277,7 +284,11 @@ const Tables = () => {
 
       <List>
         {tables.map((table) => (
-          <Row key={table.id}>
+          <Row
+            key={table.id}
+            $confirming={tablePendingDelete?.id === table.id}
+            $leaving={removingId === table.id}
+          >
             <QRCard>
               {buildUrl(table.id) ? (
                 <QRCodeCanvas
@@ -302,6 +313,26 @@ const Tables = () => {
               {copiedTableId === table.id ? t("linkCopied") : buildUrl(table.id)}
             </UrlText>
             <Actions>
+              {tablePendingDelete?.id === table.id ? (
+                <>
+                  <SecondaryButton
+                    type="button"
+                    onClick={closeDeleteConfirm}
+                    disabled={deleting}
+                  >
+                    {t("cancel")}
+                  </SecondaryButton>
+                  <DangerButton
+                    type="button"
+                    onClick={confirmDeleteTable}
+                    disabled={deleting}
+                  >
+                    {deleting ? <Spinner aria-hidden="true" /> : null}
+                    {deleting ? t("deleting") : t("confirmDelete")}
+                  </DangerButton>
+                </>
+              ) : (
+                <>
               <PrimaryButton
                 type="button"
                 onClick={() => handleDownload(table.id, table.table_number)}
@@ -327,7 +358,10 @@ const Tables = () => {
               <DangerIconButton
                 type="button"
                 aria-label={t("deleteTableAria")}
-                onClick={() => handleDelete(table.id)}
+                onClick={() => {
+                  setErrorMessage("");
+                  setTablePendingDelete(table);
+                }}
               >
                 <TrashIcon viewBox="0 0 24 24" aria-hidden="true">
                   <path
@@ -340,6 +374,8 @@ const Tables = () => {
                   />
                 </TrashIcon>
               </DangerIconButton>
+                </>
+              )}
             </Actions>
           </Row>
         ))}
@@ -347,6 +383,62 @@ const Tables = () => {
     </Page>
   );
 };
+
+const cardLeave = keyframes`
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(12px) scale(0.94);
+  }
+`;
+
+const spin = keyframes`
+  to { transform: rotate(360deg); }
+`;
+
+const ErrorBanner = styled.p`
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.08);
+  color: #b91c1c;
+  font-size: 13px;
+  font-weight: 600;
+`;
+
+const DangerButton = styled.button`
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: none;
+  background: #dc2626;
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: 1 1 auto;
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: default;
+  }
+`;
+
+const Spinner = styled.span`
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #ffffff;
+  animation: ${spin} 0.7s linear infinite;
+  flex-shrink: 0;
+`;
 
 const Page = styled.div`
   display: grid;
@@ -419,6 +511,22 @@ const Row = styled.div`
   position: relative;
   overflow: hidden;
   min-height: 320px;
+  transform-origin: center;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+  ${({ $confirming }) =>
+    $confirming &&
+    css`
+      border-color: rgba(239, 68, 68, 0.45);
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+    `}
+
+  ${({ $leaving }) =>
+    $leaving &&
+    css`
+      animation: ${cardLeave} 0.32s ease forwards;
+      pointer-events: none;
+    `}
 
   @media (max-width: 600px) {
     padding: 16px;
@@ -554,6 +662,12 @@ const SecondaryButton = styled.button`
   border-radius: 999px;
   padding: 8px 12px;
   cursor: pointer;
+  flex: 1 1 auto;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
 `;
 
 const DangerIconButton = styled.button`
@@ -648,6 +762,11 @@ const ModalClose = styled.button`
   cursor: pointer;
   font-size: 18px;
   flex-shrink: 0;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
 `;
 
 const ModalForm = styled.form`

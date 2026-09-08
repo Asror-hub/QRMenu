@@ -5,6 +5,7 @@ import { supabase } from "../services/supabase";
 import { uploadImage } from "../services/cloudinary";
 import { useRestaurant } from "../context/RestaurantContext";
 import { hasPlanFeature } from "../utils/planFeatures";
+import { getCustomerAppBaseUrl } from "../utils/customerAppUrl";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { LANG_OPTIONS } from "../i18n";
@@ -212,12 +213,7 @@ const Settings = () => {
 
   const websiteUrl = useMemo(() => {
     if (!restaurant?.id) return "";
-    const envBase = (import.meta.env.VITE_CUSTOMER_APP_URL || "").replace(/\/$/, "");
-    let base = envBase;
-    if (!base && typeof window !== "undefined") {
-      const { protocol, hostname } = window.location;
-      base = `${protocol}//${hostname}:5174`;
-    }
+    const base = getCustomerAppBaseUrl();
     const ref = restaurant.slug?.trim() || restaurant.id;
     return base ? `${base}/site/${ref}` : "";
   }, [restaurant?.id, restaurant?.slug]);

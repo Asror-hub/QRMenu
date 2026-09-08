@@ -4,6 +4,25 @@ import { useAuth } from "./AuthContext";
 
 const RestaurantContext = createContext(null);
 
+async function fetchRestaurantForUser(userId, attempts = 3) {
+  for (let i = 0; i < attempts; i++) {
+    const { data, error } = await supabase
+      .from("restaurants")
+      .select("*")
+      .eq("owner_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if (error) return null;
+    const row = (data ?? [])[0] ?? null;
+    if (row) return row;
+    if (i < attempts - 1) {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+    }
+  }
+  return null;
+}
+
 export const RestaurantProvider = ({ children }) => {
   const { user, loading: authLoading } = useAuth();
   const [restaurant, setRestaurant] = useState(null);
@@ -21,13 +40,8 @@ export const RestaurantProvider = ({ children }) => {
       }
 
       setLoading(true);
-      const { data, error } = await supabase
-        .from("restaurants")
-        .select("*")
-        .eq("owner_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(1);
-      setRestaurant(!error ? (data ?? [])[0] ?? null : null);
+      const row = await fetchRestaurantForUser(user.id);
+      setRestaurant(row);
 
       setLoading(false);
     };

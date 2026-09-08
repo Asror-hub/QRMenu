@@ -8,6 +8,7 @@ import { FeedbackAlertsProvider } from "./context/FeedbackAlertsContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Layout from "./components/Layout";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Categories from "./pages/Categories";
 import Tables from "./pages/Tables";
@@ -29,7 +30,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Navigate to="/login" replace />} />
+          <Route path="/register" element={<Register />} />
           <Route
             path="/dashboard"
             element={

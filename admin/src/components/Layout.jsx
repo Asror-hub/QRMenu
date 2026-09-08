@@ -60,6 +60,8 @@ const Layout = ({ children }) => {
   const pageTitle = pageTitleKey ? t(pageTitleKey) : null;
   const titleCentered = !sidebarOpen;
   const feedbacksAlert = incomingCount > 0;
+  const venueInactive = restaurant?.is_active === false;
+  const showInactiveLock = venueInactive && pathname !== "/support";
 
   const handleSignOut = async () => {
     await signOut();
@@ -207,7 +209,24 @@ const Layout = ({ children }) => {
           </TopBarTitleSlot>
           <TopBarSide $align="end" ref={setTopBarActionsEl} />
         </TopBar>
-        <Content>{children}</Content>
+        <Content>
+          {showInactiveLock ? (
+            <InactivePanel>
+              <InactiveTitle>{t("venueInactiveTitle")}</InactiveTitle>
+              <InactiveBody>{t("venueInactiveBody")}</InactiveBody>
+              <InactiveActions>
+                <SupportJump type="button" onClick={() => navigate("/support")}>
+                  {t("navSupport")}
+                </SupportJump>
+                <SupportJump type="button" onClick={handleSignOut}>
+                  {t("signOut")}
+                </SupportJump>
+              </InactiveActions>
+            </InactivePanel>
+          ) : (
+            children
+          )}
+        </Content>
       </Main>
     </Shell>
     </TopBarSlotsContext.Provider>
@@ -573,6 +592,40 @@ const Content = styled.div`
   overflow: auto;
   display: flex;
   flex-direction: column;
+`;
+
+const InactivePanel = styled.div`
+  max-width: 480px;
+  margin: 12px 0 32px;
+  padding: 8px 4px;
+`;
+
+const InactiveTitle = styled.h1`
+  margin: 0 0 8px;
+  font-size: 22px;
+`;
+
+const InactiveBody = styled.p`
+  margin: 0 0 18px;
+  color: var(--text-muted, #6b7a90);
+  line-height: 1.5;
+`;
+
+const InactiveActions = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+`;
+
+const SupportJump = styled.button`
+  border: 1px solid var(--container-border-strong, rgba(11, 31, 58, 0.16));
+  background: var(--surface, #fff);
+  color: inherit;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
 `;
 
 export default Layout;
