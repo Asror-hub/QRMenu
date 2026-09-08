@@ -56,7 +56,7 @@ type MenuItem = {
 };
 
 /** TEMP: flip to false / delete this block when demo data is no longer needed. */
-const USE_DEMO_MENU_DATA = true;
+const USE_DEMO_MENU_DATA = false;
 
 const DEMO_CATEGORY_NAMES = [
   "Appetizers",
@@ -443,10 +443,10 @@ function isSoldOut(value: boolean | null | undefined) {
   return value === true;
 }
 
-function tableLabel(t: TableRow) {
-  return t.table_name?.trim()
-    ? `${t.table_name.trim()} ${t.table_number}`
-    : `Table ${t.table_number}`;
+function tableLabel(table: TableRow, tableWord = "Table") {
+  return table.table_name?.trim()
+    ? `${table.table_name.trim()} ${table.table_number}`
+    : `${tableWord} ${table.table_number}`;
 }
 
 function defaultPos(index: number) {
@@ -643,7 +643,7 @@ function SubmitOrderScreen() {
   const cartSheetVisible = useSharedValue(0);
   const [cartSheetOpen, setCartSheetOpen] = useState(false);
   const isStackedLayout = !isTablet;
-  const cartCollapsedH = 62 + (isStackedLayout ? Math.max(insets.bottom, 8) : 0);
+  const cartCollapsedH = 72 + (isStackedLayout ? Math.max(insets.bottom, 10) : 0);
   const cartExpandedH = Math.max(
     cartCollapsedH + 120,
     Math.round(height - Math.max(insets.top, 12) - 48)
@@ -654,6 +654,8 @@ function SubmitOrderScreen() {
   } | null>(null);
   /** When true, hide active table orders in the cart and compose a fresh separate order. */
   const [composingNewOrder, setComposingNewOrder] = useState(false);
+  /** Existing order currently loaded in the cart. Null while on the table hub or a new draft. */
+  const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     if (!restaurant?.id) {
@@ -809,7 +811,7 @@ function SubmitOrderScreen() {
   );
 
   const activeOrderColumns = useMemo(() => {
-    const colCount = 3;
+    const colCount = isTablet ? 3 : 1;
     const cols: (typeof activeOrderCards)[] = Array.from(
       { length: colCount },
       () => []
@@ -825,7 +827,7 @@ function SubmitOrderScreen() {
       heights[shortest] += 2 + Math.max(1, card.items.length);
     }
     return cols;
-  }, [activeOrderCards]);
+  }, [activeOrderCards, isTablet]);
 
   const selectedTable = useMemo(
     () => tables.find((t) => t.id === selectedTableId) ?? null,
@@ -851,12 +853,13 @@ function SubmitOrderScreen() {
 
   const canJoinOrders = activeOrdersForSelectedTable.length >= 2;
 
-  // Keep existing table-order lines in the cart (editable), preserve new draft lines.
-  // Skip existing lines while composing a separate new order for the same table.
+  // Load only the order being edited — never dump every table ticket into the cart.
   useEffect(() => {
     const existing =
-      selectedTableId && !composingNewOrder
-        ? buildExistingLinesFromOrders(activeOrdersForSelectedTable)
+      selectedTableId && editingOrderId && !composingNewOrder
+        ? buildExistingLinesFromOrders(
+            activeOrdersForSelectedTable.filter((order) => order.id === editingOrderId)
+          )
         : [];
     setCart((prev) => {
       const newLines = prev.filter((line) => !line.orderId);
@@ -878,7 +881,7 @@ function SubmitOrderScreen() {
       }
       return [...existing, ...newLines];
     });
-  }, [selectedTableId, activeOrdersForSelectedTable, composingNewOrder]);
+  }, [selectedTableId, activeOrdersForSelectedTable, composingNewOrder, editingOrderId]);
 
   const categoryItems = useMemo(
     () => items.filter((i) => i.category_id === selectedCategoryId),
@@ -917,36 +920,70 @@ function SubmitOrderScreen() {
   }, []);
 
   useLayoutEffect(() => {
+    const tableNumber = selectedTable?.table_number;
+    const showTableBadge = rightMode === "orders" && tableNumber != null;
+
     navigation.setOptions({
       headerRightContainerStyle: {
         paddingRight: 8,
       },
-      headerRight: () => (
-        <TouchableOpacity
-          onPress={openItemSearch}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel={t("submitSearchMenu")}
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: 999,
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: softFillStrong,
-            borderWidth: 1,
-            borderColor: silverBorder,
-          }}
-        >
-          <Ionicons name="search" size={18} color={colors.text} />
-        </TouchableOpacity>
-      ),
+      headerRight: () =>
+        showTableBadge ? (
+          <View
+            style={{
+              minHeight: 36,
+              paddingHorizontal: 12,
+              borderRadius: 999,
+              borderWidth: 1,
+              borderColor: silverBorder,
+              backgroundColor: softFillStrong,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            accessibilityRole="text"
+            accessibilityLabel={`${t("table")} ${tableNumber}`}
+          >
+            <Text
+              style={{
+                fontSize: 13,
+                fontWeight: "800",
+                color: colors.sidebarOrange,
+              }}
+              numberOfLines={1}
+            >
+              {t("table")} {tableNumber}
+            </Text>
+          </View>
+        ) : (
+          <TouchableOpacity
+            onPress={openItemSearch}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityLabel={t("submitSearchMenu")}
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 999,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: softFillStrong,
+              borderWidth: 1,
+              borderColor: silverBorder,
+            }}
+          >
+            <Ionicons name="search" size={18} color={colors.text} />
+          </TouchableOpacity>
+        ),
     });
   }, [
+    colors.sidebarOrange,
     colors.text,
     navigation,
     openItemSearch,
+    rightMode,
+    selectedTable?.table_number,
     silverBorder,
     softFillStrong,
+    t,
   ]);
 
 
@@ -1073,6 +1110,11 @@ function SubmitOrderScreen() {
 
   const cartHasItems =
     existingCartLines.length > 0 || newCartLines.length > 0;
+  const cartDocked =
+    isStackedLayout &&
+    !!selectedTableId &&
+    (rightMode === "categories" || rightMode === "items");
+  const showCartSheet = !isStackedLayout || cartHasItems || cartDocked;
   const cartItemQty = useMemo(
     () =>
       [...existingCartLines, ...newCartLines].reduce(
@@ -1082,10 +1124,10 @@ function SubmitOrderScreen() {
     [existingCartLines, newCartLines]
   );
 
-  // Mobile / portrait: keep cart hidden until something is in it.
+  // Mobile: dock the collapsed cart while composing an order (even if still empty).
   useEffect(() => {
     if (!isStackedLayout) return;
-    if (cartHasItems) {
+    if (showCartSheet) {
       cartSheetVisible.value = withTiming(1, { duration: 240 });
     } else {
       cartSheetProgress.value = withTiming(0, { duration: 160 });
@@ -1093,24 +1135,95 @@ function SubmitOrderScreen() {
       setCartSheetOpen(false);
     }
   }, [
-    cartHasItems,
+    showCartSheet,
     cartSheetProgress,
     cartSheetVisible,
     isStackedLayout,
   ]);
 
   const assignTable = (table: TableRow) => {
+    const hasActive = orders.some(
+      (order) =>
+        order.table_id === table.id &&
+        isActiveOrderStatus(order.status) &&
+        !isWaiterCallOrder(order)
+    );
     setSelectedTableId(table.id);
-    setRightMode("categories");
     setSelectedCategoryId(null);
     setCartEmptyFocus(null);
-    setComposingNewOrder(false);
+    setComment("");
+    setOrderDiscountPercent(undefined);
+    closeLineEdit();
+    if (hasActive) {
+      setComposingNewOrder(false);
+      setEditingOrderId(null);
+      setCart([]);
+      setRightMode("orders");
+      return;
+    }
+    setComposingNewOrder(true);
+    setEditingOrderId(null);
+    setCart([]);
+    setRightMode("categories");
   };
 
   const changeTable = () => {
     setRightMode("map");
     setSelectedCategoryId(null);
     setComposingNewOrder(false);
+    setEditingOrderId(null);
+  };
+
+  const goToTableHub = () => {
+    setComposingNewOrder(false);
+    setEditingOrderId(null);
+    setCart([]);
+    setComment("");
+    setOrderDiscountPercent(undefined);
+    setSelectedCategoryId(null);
+    setCartEmptyFocus(null);
+    closeLineEdit();
+    setRightMode("orders");
+  };
+
+  const backToTableContext = () => {
+    if (selectedTableId && activeOrdersForSelectedTable.length) {
+      goToTableHub();
+      return;
+    }
+    changeTable();
+  };
+
+  const startNewOrderForTable = () => {
+    if (!selectedTableId) {
+      setRightMode("map");
+      return;
+    }
+    setComposingNewOrder(true);
+    setEditingOrderId(null);
+    setCart([]);
+    setComment("");
+    setOrderDiscountPercent(undefined);
+    closeLineEdit();
+    setCartEmptyFocus({
+      title: t("submitNewOrder"),
+      hint: selectedTable
+        ? `${t("submitEmptyCartForTable", { table: tableLabel(selectedTable, t("table")) })} · ${t("submitAddSeparate")}`
+        : t("submitAddSeparate"),
+    });
+    setSelectedCategoryId(null);
+    setRightMode("categories");
+  };
+
+  const openExistingOrder = (table: TableRow, order: Order) => {
+    setSelectedTableId(table.id);
+    setEditingOrderId(order.id);
+    setComposingNewOrder(false);
+    setSelectedCategoryId(null);
+    setCartEmptyFocus(null);
+    setComment(order.comment?.trim() || "");
+    setOrderDiscountPercent(undefined);
+    setRightMode("categories");
   };
 
   const openCategory = (categoryId: string) => {
@@ -1126,6 +1239,11 @@ function SubmitOrderScreen() {
   const addItem = (item: MenuItem) => {
     const unit = Number(item.price ?? 0);
     setCartEmptyFocus(null);
+    if (rightMode === "orders") {
+      setComposingNewOrder(true);
+      setEditingOrderId(null);
+      setRightMode("categories");
+    }
     setCart((prev) => {
       const existing = prev.find((line) => !line.orderId && line.id === item.id);
       if (existing) {
@@ -1486,8 +1604,10 @@ function SubmitOrderScreen() {
 
                 setSavingExisting(false);
                 setComposingNewOrder(false);
+                setEditingOrderId(null);
                 await loadOrders();
                 setCartEmptyFocus(null);
+                goToTableHub();
               })();
             },
           },
@@ -1506,34 +1626,22 @@ function SubmitOrderScreen() {
       }
 
       const startFreshCart = () => {
-        setComposingNewOrder(true);
-        setCart([]);
-        setComment("");
-        setOrderDiscountPercent(undefined);
-        setCartEmptyFocus({
-          title: t("submitNewOrder"),
-          hint: selectedTable
-            ? `${t("submitEmptyCartForTable", { table: tableLabel(selectedTable) })} · ${t("submitAddSeparate")}`
-            : t("submitAddSeparate"),
-        });
-        setSelectedCategoryId(null);
-        setRightMode("categories");
+        startNewOrderForTable();
       };
 
-      // If draft items already exist, submit them as a separate order first, then open a fresh cart.
+      // If draft items already exist, submit them as a separate order first, then show the table hub.
       if (newCartLines.length) {
         void (async () => {
           setSubmitting(true);
           const order = await createOrder("pending");
           setSubmitting(false);
           if (!order) return;
-          startFreshCart();
           await loadOrders();
+          goToTableHub();
         })();
         return;
       }
 
-      // Close active orders from the cart UI and open an empty cart for the same table.
       startFreshCart();
     });
   };
@@ -1680,11 +1788,11 @@ function SubmitOrderScreen() {
     };
   };
 
-  const closeActiveTableOrders = async () => {
-    if (!selectedTableId || !activeOrdersForSelectedTable.length) return [] as Order[];
+  const closeOrders = async (ordersToClose: Order[]) => {
+    if (!ordersToClose.length) return [] as Order[];
     const nowIso = new Date().toISOString();
     const closed: Order[] = [];
-    for (const order of activeOrdersForSelectedTable) {
+    for (const order of ordersToClose) {
       const { error } = await supabase
         .from("orders")
         .update({
@@ -1746,6 +1854,7 @@ function SubmitOrderScreen() {
     setSelectedTableId(null);
     setSelectedCategoryId(null);
     setComposingNewOrder(false);
+    setEditingOrderId(null);
     setRightMode("map");
     setCartEmptyFocus(
       emptyMessage ?? {
@@ -1767,13 +1876,13 @@ function SubmitOrderScreen() {
     const hasNew = newCartLines.length > 0;
     const hasExisting = existingCartLines.length > 0;
 
-    // Composing a separate order for this table: submit draft and keep an empty cart on the same table.
+    // Composing a separate order for this table: submit draft, then return to the table hub.
     if (composingNewOrder) {
       if (!hasNew) {
         setCartEmptyFocus({
           title: t("submitNewOrder"),
           hint: selectedTable
-            ? `${t("submitEmptyCartForTable", { table: tableLabel(selectedTable) })} · ${t("submitAddSeparate")}`
+            ? `${t("submitEmptyCartForTable", { table: tableLabel(selectedTable, t("table")) })} · ${t("submitAddSeparate")}`
             : t("submitAddSeparate"),
         });
         return;
@@ -1782,17 +1891,25 @@ function SubmitOrderScreen() {
       const order = await createOrder("pending");
       setSubmitting(false);
       if (!order) return;
-      setCart([]);
-      setComment("");
-      setOrderDiscountPercent(undefined);
-      setCartEmptyFocus({
-        title: t("submitNewOrder"),
-        hint: `${t("submitOrderSent")} · ${t("submitAddSeparate")}`,
-      });
-      setSelectedCategoryId(null);
-      setRightMode("categories");
       await loadOrders();
+      goToTableHub();
       return;
+    }
+
+    if (editingOrderId && hasNew) {
+      const current = orders.find((o) => o.id === editingOrderId);
+      if (current) {
+        setSubmitting(true);
+        const nextItems = [
+          ...((current.items ?? []) as StoredOrderItem[]),
+          ...newCartLines.map((line) => toStoredItem(line)),
+        ];
+        const ok = await persistExistingOrderItems(editingOrderId, nextItems);
+        setSubmitting(false);
+        if (!ok) return;
+        goToTableHub();
+        return;
+      }
     }
 
     if (!hasNew && !hasExisting) {
@@ -1808,10 +1925,20 @@ function SubmitOrderScreen() {
       const order = await createOrder("pending");
       setSubmitting(false);
       if (!order) return;
+      await loadOrders();
+      if (selectedTableId) {
+        goToTableHub();
+        return;
+      }
       resetAfterSubmit({
         title: t("submitCartEmpty"),
         hint: `${t("submitOrderSent")} · ${t("submitPickTableNext")}`,
       });
+      return;
+    }
+
+    if (selectedTableId && activeOrdersForSelectedTable.length) {
+      goToTableHub();
       return;
     }
 
@@ -1830,9 +1957,12 @@ function SubmitOrderScreen() {
     }
 
     const hasNew = newCartLines.length > 0;
-    const hasExisting = activeOrdersForSelectedTable.length > 0;
+    const editingOrder =
+      editingOrderId && !composingNewOrder
+        ? orders.find((order) => order.id === editingOrderId) ?? null
+        : null;
 
-    if (!hasNew && !hasExisting) {
+    if (!hasNew && !editingOrder) {
       resetAfterSubmit({
         title: t("submitCartEmpty"),
         hint: t("submitPickTableTake"),
@@ -1842,7 +1972,20 @@ function SubmitOrderScreen() {
 
     setSubmitting(true);
     let created: Order | null = null;
-    if (hasNew) {
+    let targetOrder = editingOrder;
+
+    if (editingOrder && hasNew) {
+      const nextItems = [
+        ...((editingOrder.items ?? []) as StoredOrderItem[]),
+        ...newCartLines.map((line) => toStoredItem(line)),
+      ];
+      const ok = await persistExistingOrderItems(editingOrder.id, nextItems);
+      if (!ok) {
+        setSubmitting(false);
+        return;
+      }
+      targetOrder = { ...editingOrder, items: nextItems };
+    } else if (hasNew) {
       created = await createOrder("accepted");
       if (!created) {
         setSubmitting(false);
@@ -1850,7 +1993,11 @@ function SubmitOrderScreen() {
       }
     }
 
-    const closed = await closeActiveTableOrders();
+    const ordersToClose = [targetOrder, created].filter(
+      (order): order is Order => !!order
+    );
+    const closed = await closeOrders(ordersToClose);
+    const paid = created ?? targetOrder;
 
     if (created) {
       try {
@@ -1860,25 +2007,9 @@ function SubmitOrderScreen() {
       } catch {
         // continue to print
       }
-      const nowIso = new Date().toISOString();
-      await supabase
-        .from("orders")
-        .update({
-          status: "finish",
-          finished_at: nowIso,
-          archived_at: nowIso,
-          accepted_at: created.accepted_at ?? nowIso,
-        })
-        .eq("id", created.id);
-      created = {
-        ...created,
-        status: "finish",
-        finished_at: nowIso,
-        archived_at: nowIso,
-      };
     }
 
-    const receiptOrder = buildTableReceiptOrder(created, closed);
+    const receiptOrder = buildTableReceiptOrder(null, closed);
     setSubmitting(false);
 
     if (receiptOrder) {
@@ -1896,11 +2027,21 @@ function SubmitOrderScreen() {
       }
     }
 
+    await loadOrders();
+    const closedIds = new Set(closed.map((order) => order.id));
+    const remainingOnTable = activeOrdersForSelectedTable.filter(
+      (order) => !closedIds.has(order.id)
+    );
+    const paidLabel = paid?.order_number != null ? `#${paid.order_number}` : "—";
+
+    if (remainingOnTable.length) {
+      goToTableHub();
+      return;
+    }
+
     resetAfterSubmit({
       title: t("submitCartEmpty"),
-      hint: created
-        ? `Table checked out · #${created.order_number ?? "—"} · pick a table for the next guest`
-        : "Table checked out · select a table for the next order",
+      hint: `Checked out ${paidLabel} · select a table for the next order`,
     });
   };
 
@@ -1911,7 +2052,7 @@ function SubmitOrderScreen() {
     height > width && Math.min(width, height) >= 600;
   const catCols = isTablet || isTabletPortrait ? 3 : 2;
   const itemCols = isTablet || isTabletPortrait ? 3 : 2;
-  const activeOrderCols = 3;
+  const activeOrderCols = isTablet ? 3 : 1;
   const catCardWidth = Math.floor(
     (rightPaneWidth - 28 - 12 * (catCols - 1)) / catCols
   );
@@ -1932,7 +2073,7 @@ function SubmitOrderScreen() {
 
   const cartPanel = (
     <Animated.View
-      pointerEvents={isStackedLayout && !cartHasItems ? "none" : "auto"}
+      pointerEvents={isStackedLayout && !showCartSheet ? "none" : "auto"}
       style={[
         isStackedLayout
           ? cartSheetStyle
@@ -1956,10 +2097,10 @@ function SubmitOrderScreen() {
           borderColor: silverBorder,
           backgroundColor: isLight ? "#ffffff" : colors.surface,
           shadowColor: "#000",
-          shadowOpacity: isStackedLayout && cartSheetOpen ? 0.18 : 0,
-          shadowRadius: 16,
+          shadowOpacity: isStackedLayout ? (cartSheetOpen ? 0.18 : 0.1) : 0,
+          shadowRadius: isStackedLayout && cartSheetOpen ? 16 : 10,
           shadowOffset: { width: 0, height: -6 },
-          elevation: isStackedLayout && cartSheetOpen ? 16 : 0,
+          elevation: isStackedLayout ? (cartSheetOpen ? 16 : 10) : 0,
         }}
       >
         {isStackedLayout ? (
@@ -1972,8 +2113,8 @@ function SubmitOrderScreen() {
                     backgroundColor: isLight ? "#ffffff" : colors.surface,
                     paddingBottom: cartSheetOpen
                       ? 10
-                      : Math.max(insets.bottom, 8),
-                    paddingRight: cartSheetOpen ? 52 : 16,
+                      : Math.max(insets.bottom, 10),
+                    paddingRight: cartSheetOpen ? 52 : 14,
                   }}
                 >
                   <CartSheetHandle
@@ -1989,20 +2130,32 @@ function SubmitOrderScreen() {
                       <CartTitle style={{ color: colors.text }}>{t("submitCart")}</CartTitle>
                       <CartCountPill
                         style={{
-                          backgroundColor: colors.sidebarOrange,
+                          backgroundColor: cartItemQty
+                            ? colors.sidebarOrange
+                            : isLight
+                              ? "rgba(28, 25, 23, 0.08)"
+                              : "rgba(255,255,255,0.12)",
                         }}
                       >
-                        <CartCountText style={{ color: "#fff" }}>
+                        <CartCountText
+                          style={{
+                            color: cartItemQty ? "#fff" : colors.textMuted,
+                          }}
+                        >
                           {cartItemQty}
                         </CartCountText>
                       </CartCountPill>
                     </CartHeaderLeft>
                     {!cartSheetOpen ? (
-                      <Ionicons
-                        name="chevron-up"
-                        size={20}
-                        color={colors.textMuted}
-                      />
+                      <CartExpandBtn
+                        pointerEvents="none"
+                        accessibilityLabel={t("submitExpandCart")}
+                        style={{
+                          backgroundColor: colors.sidebarOrange,
+                        }}
+                      >
+                        <Ionicons name="chevron-up" size={22} color="#fff" />
+                      </CartExpandBtn>
                     ) : null}
                   </CartMiniRow>
                 </CartMiniBar>
@@ -2064,7 +2217,7 @@ function SubmitOrderScreen() {
                   style={{ color: colors.sidebarOrange }}
                   numberOfLines={1}
                 >
-                  {tableLabel(selectedTable)}
+                  {tableLabel(selectedTable, t("table"))}
                 </TableBadgeText>
               </TableBadge>
             ) : (
@@ -2111,7 +2264,7 @@ function SubmitOrderScreen() {
                 style={{ color: colors.sidebarOrange }}
                 numberOfLines={1}
               >
-                {tableLabel(selectedTable)}
+                {tableLabel(selectedTable, t("table"))}
               </TableBadgeText>
             </TableBadge>
           </CartExpandedMeta>
@@ -2130,6 +2283,16 @@ function SubmitOrderScreen() {
         showsVerticalScrollIndicator={false}
         nestedScrollEnabled
       >
+        {!cartHasItems ? (
+          <CartEmptyWrap>
+            <CartEmptyTitle style={{ color: colors.text }}>
+              {cartEmptyFocus?.title ?? t("submitCartEmpty")}
+            </CartEmptyTitle>
+            <CartEmptyHint style={{ color: colors.textMuted }}>
+              {cartEmptyFocus?.hint ?? t("submitCartEmptyHint")}
+            </CartEmptyHint>
+          </CartEmptyWrap>
+        ) : null}
         {[...existingCartLines, ...newCartLines].map((line) => {
           const isExisting = !!line.orderId;
           return (
@@ -2306,24 +2469,160 @@ function SubmitOrderScreen() {
     </Animated.View>
   );
 
+  const orderSourceLabel = (order: Order) =>
+    order.source === "staff" ? t("historyStaff") : t("historyQr");
+
+  const orderStatusLabel = (order: Order) =>
+    order.status === "pending"
+      ? t("ordersFilterNew")
+      : order.status === "accepted"
+        ? t("ordersFilterInProgress")
+        : order.status === "ready"
+          ? t("ordersFilterReady")
+          : order.status;
+
+  const renderFloorOrderCard = (
+    table: TableRow,
+    order: Order,
+    variant: "phone" | "masonry"
+  ) => {
+    const items = orderLineItems(order);
+    const total = orderTotal(order);
+    const selected = table.id === selectedTableId;
+    const phone = variant === "phone";
+    return (
+      <ActiveTableCard
+        key={order.id}
+        onPress={() => openExistingOrder(table, order)}
+        activeOpacity={0.88}
+        style={{
+          borderColor: selected ? colors.sidebarOrange : silverBorder,
+          backgroundColor: isLight ? "#ffffff" : colors.surface,
+        }}
+      >
+        <ActiveTableCardHeader
+          style={phone ? { paddingVertical: 14, paddingHorizontal: 16 } : undefined}
+        >
+          <ActiveTableHeaderCopy>
+            <ActiveTableName
+              style={{
+                color: colors.text,
+                fontSize: phone ? 16 : 17,
+              }}
+              numberOfLines={1}
+            >
+              {phone
+                ? `#${order.order_number ?? "—"}`
+                : tableLabel(table, t("table"))}
+            </ActiveTableName>
+            {phone ? (
+              <PaneHint style={{ color: colors.textMuted }} numberOfLines={1}>
+                {orderSourceLabel(order)} · {orderStatusLabel(order)}
+              </PaneHint>
+            ) : null}
+          </ActiveTableHeaderCopy>
+          {phone ? (
+            <Ionicons
+              name="chevron-forward"
+              size={18}
+              color={colors.textMuted}
+            />
+          ) : (
+            <ActiveTableOrderIndex
+              style={{
+                color: selected ? colors.sidebarOrange : colors.textMuted,
+              }}
+            >
+              #{order.order_number ?? "—"}
+            </ActiveTableOrderIndex>
+          )}
+        </ActiveTableCardHeader>
+
+        <ActiveTableOrdersList
+          style={{
+            borderTopColor: silverBorder,
+            paddingHorizontal: phone ? 16 : 12,
+            paddingVertical: phone ? 12 : 10,
+            gap: phone ? 10 : 8,
+          }}
+        >
+          {items.length ? (
+            items.map((item, idx) => {
+              const qty = Number(item.quantity ?? 1) || 1;
+              return (
+                <ActiveTableOrderRow key={`${order.id}-${item.id ?? idx}`}>
+                  <ActiveItemQty
+                    style={{
+                      color: colors.textMuted,
+                      fontSize: phone ? 14 : 13,
+                    }}
+                  >
+                    {qty}×
+                  </ActiveItemQty>
+                  <ActiveItemName
+                    style={{
+                      color: colors.text,
+                      fontSize: phone ? 14 : 13,
+                      lineHeight: phone ? 20 : 18,
+                    }}
+                    numberOfLines={2}
+                  >
+                    {item.name?.trim() || t("item")}
+                  </ActiveItemName>
+                  <ActiveItemPrice
+                    style={{
+                      color: colors.textMuted,
+                      fontSize: phone ? 13 : 12,
+                    }}
+                  >
+                    {formatAmount((Number(item.price ?? 0) || 0) * qty)}
+                  </ActiveItemPrice>
+                </ActiveTableOrderRow>
+              );
+            })
+          ) : (
+            <ActiveTableMore style={{ color: colors.textMuted }}>
+              {t("submitNoItems")}
+            </ActiveTableMore>
+          )}
+        </ActiveTableOrdersList>
+
+        <ActiveTableCardFooter
+          style={phone ? { paddingHorizontal: 16, paddingVertical: 13 } : undefined}
+        >
+          <ActiveTableTotalLabel style={{ color: colors.textMuted }}>
+            {t("submitTotal")}
+          </ActiveTableTotalLabel>
+          <ActiveTableTotalValue
+            style={{
+              color: colors.text,
+              fontSize: phone ? 16 : 15,
+            }}
+          >
+            {formatAmount(total)}
+          </ActiveTableTotalValue>
+        </ActiveTableCardFooter>
+      </ActiveTableCard>
+    );
+  };
+
   const rightPanel = (
     <RightPane style={{ backgroundColor: colors.bg }}>
       {rightMode === "map" ? (
         <>
           <PaneHeader>
             <View style={{ gap: 4, flex: 1, minWidth: 0 }}>
-              <PaneTitle style={{ color: colors.text }}>
+              <PaneTitle style={{ color: colors.text }} numberOfLines={1}>
                 {floorView === "map" ? t("submitSelectTable") : t("submitActiveOrders")}
               </PaneTitle>
-              <PaneHint style={{ color: colors.textMuted }}>
+              <PaneHint style={{ color: colors.textMuted }} numberOfLines={1}>
                 {floorView === "map"
                   ? t("submitMapHint")
                   : activeOrdersSummary.tableCount
-                    ? `${activeOrdersSummary.tableCount} table${
-                        activeOrdersSummary.tableCount === 1 ? "" : "s"
-                      } · ${activeOrdersSummary.orderCount} active order${
-                        activeOrdersSummary.orderCount === 1 ? "" : "s"
-                      }`
+                    ? t("submitActiveSummary", {
+                        tables: activeOrdersSummary.tableCount,
+                        orders: activeOrdersSummary.orderCount,
+                      })
                     : t("submitNoOpenTables")}
               </PaneHint>
             </View>
@@ -2564,120 +2863,57 @@ function SubmitOrderScreen() {
           ) : (
             <ScrollView
               contentContainerStyle={{
-                padding: 14,
-                paddingBottom: 28,
+                padding: isStackedLayout ? 16 : 14,
+                paddingBottom: isStackedLayout ? 36 : 28,
               }}
               showsVerticalScrollIndicator={false}
             >
               {activeOrderCards.length ? (
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "flex-start",
-                    gap: 12,
-                  }}
-                >
-                  {activeOrderColumns.map((column, colIndex) => (
-                    <View
-                      key={`orders-col-${colIndex}`}
-                      style={{ width: activeOrderCardWidth, gap: 12 }}
-                    >
-                      {column.map(({ table, order, total, items }) => {
-                        const selected = table.id === selectedTableId;
-                        return (
-                          <ActiveTableCard
-                            key={order.id}
-                            onPress={() => assignTable(table)}
-                            activeOpacity={0.88}
-                            style={{
-                              borderColor: selected
-                                ? colors.sidebarOrange
-                                : silverBorder,
-                              backgroundColor: isLight
-                                ? "#ffffff"
-                                : colors.surface,
-                            }}
+                isStackedLayout ? (
+                  <View style={{ gap: 22 }}>
+                    {activeOrdersByTable.map(({ table, orders: tableOrders }) => (
+                      <ActiveTableGroup key={table.id}>
+                        <ActiveTableGroupHeader>
+                          <ActiveTableGroupTitle
+                            style={{ color: colors.text }}
+                            numberOfLines={1}
                           >
-                            <ActiveTableCardHeader>
-                              <ActiveTableHeaderCopy>
-                                <ActiveTableName
-                                  style={{ color: colors.text }}
-                                  numberOfLines={1}
-                                >
-                                  Table {table.table_number}
-                                </ActiveTableName>
-                              </ActiveTableHeaderCopy>
-                              <ActiveTableOrderIndex
-                                style={{
-                                  color: selected
-                                    ? colors.sidebarOrange
-                                    : colors.textMuted,
-                                }}
-                              >
-                                #{order.order_number ?? "—"}
-                              </ActiveTableOrderIndex>
-                            </ActiveTableCardHeader>
-
-                            <ActiveTableOrdersList
-                              style={{
-                                borderTopColor: silverBorder,
-                              }}
-                            >
-                              {items.length ? (
-                                items.map((item, idx) => {
-                                  const qty = Number(item.quantity ?? 1) || 1;
-                                  return (
-                                    <ActiveTableOrderRow
-                                      key={`${order.id}-${item.id ?? idx}`}
-                                    >
-                                      <ActiveItemQty
-                                        style={{ color: colors.textMuted }}
-                                      >
-                                        {qty}×
-                                      </ActiveItemQty>
-                                      <ActiveItemName
-                                        style={{ color: colors.text }}
-                                        numberOfLines={2}
-                                      >
-                                        {item.name?.trim() || "Item"}
-                                      </ActiveItemName>
-                                      <ActiveItemPrice
-                                        style={{ color: colors.textMuted }}
-                                      >
-                                        {formatAmount(
-                                          (Number(item.price ?? 0) || 0) * qty
-                                        )}
-                                      </ActiveItemPrice>
-                                    </ActiveTableOrderRow>
-                                  );
-                                })
-                              ) : (
-                                <ActiveTableMore
-                                  style={{ color: colors.textMuted }}
-                                >
-                                  {t("submitNoItems")}
-                                </ActiveTableMore>
-                              )}
-                            </ActiveTableOrdersList>
-
-                            <ActiveTableCardFooter>
-                              <ActiveTableTotalLabel
-                                style={{ color: colors.textMuted }}
-                              >
-                                {t("submitTotal")}
-                              </ActiveTableTotalLabel>
-                              <ActiveTableTotalValue
-                                style={{ color: colors.text }}
-                              >
-                                {formatAmount(total)}
-                              </ActiveTableTotalValue>
-                            </ActiveTableCardFooter>
-                          </ActiveTableCard>
-                        );
-                      })}
-                    </View>
-                  ))}
-                </View>
+                            {tableLabel(table, t("table"))}
+                          </ActiveTableGroupTitle>
+                          <ActiveTableGroupCount
+                            style={{ color: colors.textMuted }}
+                          >
+                            {t("submitTableOrdersCount", {
+                              count: tableOrders.length,
+                            })}
+                          </ActiveTableGroupCount>
+                        </ActiveTableGroupHeader>
+                        {tableOrders.map((order) =>
+                          renderFloorOrderCard(table, order, "phone")
+                        )}
+                      </ActiveTableGroup>
+                    ))}
+                  </View>
+                ) : (
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "flex-start",
+                      gap: 12,
+                    }}
+                  >
+                    {activeOrderColumns.map((column, colIndex) => (
+                      <View
+                        key={`orders-col-${colIndex}`}
+                        style={{ width: activeOrderCardWidth, gap: 12 }}
+                      >
+                        {column.map(({ table, order }) =>
+                          renderFloorOrderCard(table, order, "masonry")
+                        )}
+                      </View>
+                    ))}
+                  </View>
+                )
               ) : (
                 <ActiveOrdersEmpty>
                   <ActiveOrdersEmptyIcon
@@ -2705,6 +2941,131 @@ function SubmitOrderScreen() {
         </>
       ) : null}
 
+      {rightMode === "orders" ? (
+        <>
+          <ScrollView
+            contentContainerStyle={{
+              padding: isStackedLayout ? 16 : 14,
+              paddingBottom: 20,
+              gap: 12,
+            }}
+            showsVerticalScrollIndicator={false}
+          >
+            {activeOrdersForSelectedTable.map((order) => {
+              const items = orderLineItems(order);
+              const total = orderTotal(order);
+              return (
+                <ActiveTableCard
+                  key={order.id}
+                  onPress={() =>
+                    selectedTable
+                      ? openExistingOrder(selectedTable, order)
+                      : undefined
+                  }
+                  activeOpacity={0.88}
+                  style={{
+                    borderColor: silverBorder,
+                    backgroundColor: isLight ? "#ffffff" : colors.surface,
+                  }}
+                >
+                  <ActiveTableCardHeader>
+                    <ActiveTableHeaderCopy>
+                      <ActiveTableName
+                        style={{ color: colors.text }}
+                        numberOfLines={1}
+                      >
+                        #{order.order_number ?? "—"}
+                      </ActiveTableName>
+                      <PaneHint style={{ color: colors.textMuted }} numberOfLines={1}>
+                        {orderSourceLabel(order)} · {orderStatusLabel(order)}
+                      </PaneHint>
+                    </ActiveTableHeaderCopy>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={18}
+                      color={colors.textMuted}
+                    />
+                  </ActiveTableCardHeader>
+                  <ActiveTableOrdersList style={{ borderTopColor: silverBorder }}>
+                    {items.length ? (
+                      items.map((item, idx) => {
+                        const qty = Number(item.quantity ?? 1) || 1;
+                        return (
+                          <ActiveTableOrderRow
+                            key={`${order.id}-${item.id ?? idx}`}
+                          >
+                            <ActiveItemQty style={{ color: colors.textMuted }}>
+                              {qty}×
+                            </ActiveItemQty>
+                            <ActiveItemName
+                              style={{ color: colors.text }}
+                              numberOfLines={2}
+                            >
+                              {item.name?.trim() || t("item")}
+                            </ActiveItemName>
+                            <ActiveItemPrice style={{ color: colors.textMuted }}>
+                              {formatAmount(
+                                (Number(item.price ?? 0) || 0) * qty
+                              )}
+                            </ActiveItemPrice>
+                          </ActiveTableOrderRow>
+                        );
+                      })
+                    ) : (
+                      <ActiveTableMore style={{ color: colors.textMuted }}>
+                        {t("submitNoItems")}
+                      </ActiveTableMore>
+                    )}
+                  </ActiveTableOrdersList>
+                  <ActiveTableCardFooter>
+                    <ActiveTableTotalLabel style={{ color: colors.textMuted }}>
+                      {t("submitTotal")}
+                    </ActiveTableTotalLabel>
+                    <ActiveTableTotalValue style={{ color: colors.text }}>
+                      {formatAmount(total)}
+                    </ActiveTableTotalValue>
+                  </ActiveTableCardFooter>
+                </ActiveTableCard>
+              );
+            })}
+          </ScrollView>
+          <HubFooter
+            style={{
+              borderTopColor: silverBorder,
+              paddingBottom: isTablet ? 12 : Math.max(insets.bottom, 12),
+            }}
+          >
+            <HubMapBtn
+              onPress={changeTable}
+              activeOpacity={0.88}
+              style={{
+                borderColor: silverBorder,
+                backgroundColor: softFill,
+              }}
+            >
+              <Ionicons name="map-outline" size={18} color={colors.text} />
+              <HubMapBtnText style={{ color: colors.text }}>
+                {t("submitBackToMap")}
+              </HubMapBtnText>
+            </HubMapBtn>
+            <NewOrderBtn
+              onPress={startNewOrderForTable}
+              activeOpacity={0.88}
+              style={{
+                flexGrow: 1,
+                backgroundColor: colors.sidebarOrange,
+                borderColor: isLight ? "#e65c00" : colors.sidebarOrange,
+              }}
+            >
+              <Ionicons name="add" size={20} color="#fff" />
+              <NewOrderBtnText style={{ color: "#fff" }}>
+                {t("submitNewOrderOnTable")}
+              </NewOrderBtnText>
+            </NewOrderBtn>
+          </HubFooter>
+        </>
+      ) : null}
+
       {rightMode === "categories" ? (
         <>
           <PaneHeader>
@@ -2719,7 +3080,7 @@ function SubmitOrderScreen() {
               </PaneHint>
             </View>
             <ChangeTableLink
-              onPress={changeTable}
+              onPress={backToTableContext}
               activeOpacity={0.85}
               style={{
                 borderColor: silverBorder,
@@ -2728,7 +3089,7 @@ function SubmitOrderScreen() {
             >
               <Ionicons name="grid-outline" size={14} color={colors.sidebarOrange} />
               <ChangeTableText style={{ color: colors.sidebarOrange }}>
-                Table
+                {t("table")}
               </ChangeTableText>
             </ChangeTableLink>
           </PaneHeader>
@@ -2748,7 +3109,7 @@ function SubmitOrderScreen() {
                 />
                 <CategoriesBrandCopy>
                   <CategoriesBrandName style={{ color: colors.text }}>
-                    QRMenu
+                    SmartQr
                   </CategoriesBrandName>
                   <CategoriesBrandTag style={{ color: colors.textMuted }}>
                     Admin
@@ -2853,7 +3214,7 @@ function SubmitOrderScreen() {
               </View>
             </BackRow>
             <ChangeTableLink
-              onPress={changeTable}
+              onPress={backToTableContext}
               activeOpacity={0.85}
               style={{
                 borderColor: silverBorder,
@@ -2862,7 +3223,7 @@ function SubmitOrderScreen() {
             >
               <Ionicons name="grid-outline" size={14} color={colors.sidebarOrange} />
               <ChangeTableText style={{ color: colors.sidebarOrange }}>
-                Table
+                {t("table")}
               </ChangeTableText>
             </ChangeTableLink>
           </PaneHeader>
@@ -3020,7 +3381,7 @@ function SubmitOrderScreen() {
           <>
             {rightPanel}
             {/* Reserve space for the collapsed mini bar only — expanded cart overlays above. */}
-            {cartHasItems ? (
+            {showCartSheet ? (
               <View style={{ height: cartCollapsedH }} />
             ) : null}
             {cartPanel}
@@ -3570,6 +3931,7 @@ function SubmitOrderScreen() {
           {cartDimBounds && cartFooterBounds && orderMenuAnchor
             ? (() => {
                 const dimShift = 70;
+                const mobileMenuLift = isStackedLayout ? 40 : 0;
                 const menuH = orderMenuBlockHeight();
                 const placement = resolveFloatingMenuPlacement(
                   orderMenuAnchor.y,
@@ -3582,17 +3944,47 @@ function SubmitOrderScreen() {
                   placement === "above"
                     ? orderMenuAnchor.y -
                       ORDER_MENU_BOTTOM_OFFSET -
-                      menuH
+                      menuH -
+                      mobileMenuLift
                     : orderMenuAnchor.y - 10;
                 const baseBottom =
                   placement === "above"
-                    ? cartFooterBounds.y + cartFooterBounds.height
+                    ? isStackedLayout
+                      ? cartFooterBounds.y
+                      : cartFooterBounds.y + cartFooterBounds.height
                     : orderMenuAnchor.y +
                       orderMenuAnchor.height +
                       ORDER_MENU_BOTTOM_OFFSET +
                       menuH +
                       10;
-                return (
+                const overlayStyle = {
+                  position: "absolute" as const,
+                  left: cartDimBounds.x,
+                  top:
+                    placement === "above"
+                      ? baseTop - (isStackedLayout ? 0 : dimShift)
+                      : baseTop,
+                  width: cartDimBounds.width,
+                  height: Math.max(
+                    0,
+                    baseBottom -
+                      (placement === "above"
+                        ? baseTop - (isStackedLayout ? 0 : dimShift)
+                        : baseTop) +
+                      (placement === "below" && !isStackedLayout ? dimShift : 0)
+                  ),
+                };
+                return isStackedLayout ? (
+                  <View
+                    pointerEvents="none"
+                    style={{
+                      ...overlayStyle,
+                      backgroundColor: isLight
+                        ? "rgba(255, 255, 255, 0.96)"
+                        : "rgba(28, 25, 23, 0.88)",
+                    }}
+                  />
+                ) : (
                   <LinearGradient
                     pointerEvents="none"
                     colors={
@@ -3613,23 +4005,7 @@ function SubmitOrderScreen() {
                     locations={[0, 0.28, 0.62, 1]}
                     start={{ x: 0.5, y: 0 }}
                     end={{ x: 0.5, y: 1 }}
-                    style={{
-                      position: "absolute",
-                      left: cartDimBounds.x,
-                      top:
-                        placement === "above"
-                          ? baseTop - dimShift
-                          : baseTop,
-                      width: cartDimBounds.width,
-                      height: Math.max(
-                        0,
-                        baseBottom -
-                          (placement === "above"
-                            ? baseTop - dimShift
-                            : baseTop) +
-                          (placement === "below" ? dimShift : 0)
-                      ),
-                    }}
+                    style={overlayStyle}
                   />
                 );
               })()
@@ -3643,6 +4019,7 @@ function SubmitOrderScreen() {
                   height
                 );
                 orderMenuPlacementRef.current = placement;
+                const mobileMenuLift = isStackedLayout ? 40 : 0;
                 return (
                   <FloatingEditMenu
                     pointerEvents="box-none"
@@ -3653,7 +4030,8 @@ function SubmitOrderScreen() {
                             bottom:
                               height -
                               orderMenuAnchor.y -
-                              ORDER_MENU_BOTTOM_OFFSET,
+                              ORDER_MENU_BOTTOM_OFFSET +
+                              mobileMenuLift,
                           }
                         : {
                             top:
@@ -3841,8 +4219,8 @@ const CartSheetHandle = styled.View`
 
 const CartMiniBar = styled.View`
   border-bottom-width: 1px;
-  padding-top: 8px;
-  padding-horizontal: 16px;
+  padding-top: 10px;
+  padding-horizontal: 14px;
 `;
 
 const CartMiniRow = styled.View`
@@ -3850,7 +4228,37 @@ const CartMiniRow = styled.View`
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  min-height: 36px;
+  min-height: 40px;
+`;
+
+const CartExpandBtn = styled.View`
+  width: 40px;
+  height: 40px;
+  border-radius: 20px;
+  align-items: center;
+  justify-content: center;
+`;
+
+const CartEmptyWrap = styled.View`
+  flex-grow: 1;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 16px 20px;
+  gap: 6px;
+`;
+
+const CartEmptyTitle = styled.Text`
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  text-align: center;
+`;
+
+const CartEmptyHint = styled.Text`
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+  line-height: 18px;
 `;
 
 const CartCloseBtn = styled.TouchableOpacity`
@@ -4161,6 +4569,7 @@ const ItemEditHint = styled.Text`
 
 const ItemEditFooter = styled.View`
   flex-direction: row;
+  flex-wrap: wrap;
   gap: 8px;
   padding: 12px 14px 14px;
   border-top-width: 1px;
@@ -4198,22 +4607,26 @@ const EditFieldLabel = styled.Text`
 
 const EditActions = styled.View`
   flex-direction: row;
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: 4px;
 `;
 
 const EditActionBtn = styled.TouchableOpacity`
-  flex: 1;
-  height: 44px;
+  flex-grow: 1;
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 12px 16px;
   border-radius: 999px;
   border-width: 1px;
   align-items: center;
   justify-content: center;
 `;
 
-const EditActionText = styled.Text`
+const EditActionText = styled.Text.attrs({ numberOfLines: 1 })`
   font-size: 13px;
   font-weight: 800;
+  flex-shrink: 0;
 `;
 
 const EditCancelBtn = styled.TouchableOpacity`
@@ -4254,15 +4667,15 @@ const IconActionBtn = styled.TouchableOpacity`
 `;
 
 const CheckoutBtn = styled.TouchableOpacity`
-  height: 48px;
-  padding: 0 22px;
+  min-height: 48px;
+  padding: 10px 18px;
   border-radius: 999px;
   border-width: 1px;
   flex-direction: row;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-width: 140px;
+  flex-shrink: 1;
 `;
 
 const CommentInput = styled(TextInput)`
@@ -4273,9 +4686,10 @@ const CommentInput = styled(TextInput)`
   font-weight: 500;
 `;
 
-const ActionBtnText = styled.Text`
+const ActionBtnText = styled.Text.attrs({ numberOfLines: 1 })`
   font-size: 13px;
   font-weight: 800;
+  flex-shrink: 0;
 `;
 
 const RightPane = styled.View`
@@ -4313,9 +4727,36 @@ const FloorViewBtn = styled.TouchableOpacity`
   flex-shrink: 0;
 `;
 
-const FloorViewBtnText = styled.Text`
+const FloorViewBtnText = styled.Text.attrs({ numberOfLines: 1 })`
   font-size: 13px;
   font-weight: 700;
+  flex-shrink: 0;
+`;
+
+const ActiveTableGroup = styled.View`
+  gap: 10px;
+`;
+
+const ActiveTableGroupHeader = styled.View`
+  flex-direction: row;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 2px 2px;
+`;
+
+const ActiveTableGroupTitle = styled.Text`
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+`;
+
+const ActiveTableGroupCount = styled.Text`
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
 `;
 
 const ActiveTableCard = styled.TouchableOpacity`
@@ -4447,9 +4888,59 @@ const ChangeTableLink = styled.TouchableOpacity`
   flex-shrink: 0;
 `;
 
-const ChangeTableText = styled.Text`
+const ChangeTableText = styled.Text.attrs({ numberOfLines: 1 })`
   font-size: 12px;
   font-weight: 700;
+  flex-shrink: 0;
+`;
+
+const HubFooter = styled.View`
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 10px;
+  padding: 12px 16px;
+  border-top-width: 1px;
+`;
+
+const HubMapBtn = styled.TouchableOpacity`
+  flex-grow: 1;
+  flex-shrink: 0;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  border-width: 1px;
+`;
+
+const HubMapBtnText = styled.Text.attrs({ numberOfLines: 1 })`
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  flex-shrink: 0;
+`;
+
+const NewOrderBtn = styled.TouchableOpacity`
+  flex-grow: 1;
+  flex-shrink: 0;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  border-width: 1px;
+`;
+
+const NewOrderBtnText = styled.Text.attrs({ numberOfLines: 1 })`
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  flex-shrink: 0;
 `;
 
 const BackRow = styled.TouchableOpacity`

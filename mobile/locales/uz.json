@@ -1,8 +1,8 @@
 {
   "ios": {
-    "CFBundleDisplayName": "QRMenu Admin"
+      "CFBundleDisplayName": "SmartQr"
   },
   "android": {
-    "app_name": "QRMenu Admin"
+    "app_name": "SmartQr"
   }
 }

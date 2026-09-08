@@ -109,18 +109,20 @@ export const Input = styled(TextInput)`
 
 export const SaveBtn = styled.TouchableOpacity`
   align-self: stretch;
-  height: 48px;
+  min-height: 48px;
+  padding: 12px 18px;
   border-radius: 999px;
   align-items: center;
   justify-content: center;
   margin-top: 4px;
 `;
 
-export const SaveBtnText = styled.Text`
+export const SaveBtnText = styled.Text.attrs({ numberOfLines: 1 })`
   color: #fff;
   font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.2px;
+  flex-shrink: 0;
 `;
 
 type SettingsSaveButtonProps = {
@@ -231,7 +233,7 @@ export function SettingsSaveButton({
           style={{
             marginTop: 0,
             backgroundColor: "transparent",
-            height: 48,
+            minHeight: 48,
           }}
         >
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
@@ -278,9 +280,9 @@ function HeaderSaveChip({
       activeOpacity={0.82}
       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       style={{
-        minWidth: 72,
-        height: 34,
+        minHeight: 34,
         paddingHorizontal: 14,
+        paddingVertical: 7,
         borderRadius: 999,
         alignItems: "center",
         justifyContent: "center",
@@ -292,7 +294,7 @@ function HeaderSaveChip({
     >
       <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
         {saved ? <Ionicons name="checkmark" size={15} color="#fff" /> : null}
-        <SaveBtnText style={{ color: "#fff", fontSize: 13 }}>
+        <SaveBtnText style={{ color: "#fff", fontSize: 13 }} numberOfLines={1}>
           {saving ? "Saving" : saved ? "Saved" : label}
         </SaveBtnText>
       </View>
@@ -379,7 +381,7 @@ export function useSettingsHeaderSave({
               alignItems: "center",
             }}
           >
-            <View style={{ width: 72, alignItems: "flex-start", justifyContent: "center" }}>
+            <View style={{ flex: 1, alignItems: "flex-start", justifyContent: "center" }}>
               <TouchableOpacity
                 onPress={() => router.back()}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -398,7 +400,8 @@ export function useSettingsHeaderSave({
 
             <Text
               style={{
-                flex: 1,
+                flexShrink: 1,
+                maxWidth: "46%",
                 textAlign: "center",
                 fontSize: 17,
                 fontWeight: "600",
@@ -409,7 +412,7 @@ export function useSettingsHeaderSave({
               {options.title ?? ""}
             </Text>
 
-            <View style={{ width: 72, alignItems: "flex-end", justifyContent: "center" }}>
+            <View style={{ flex: 1, alignItems: "flex-end", justifyContent: "center" }}>
               {chip}
             </View>
           </View>
@@ -480,27 +483,31 @@ export const ToggleLabel = styled.Text`
 `;
 
 export const GhostBtn = styled.TouchableOpacity`
-  height: 48px;
+  min-height: 48px;
+  padding: 12px 18px;
   border-radius: 999px;
   border-width: 1px;
   align-items: center;
   justify-content: center;
 `;
 
-export const GhostBtnText = styled.Text`
+export const GhostBtnText = styled.Text.attrs({ numberOfLines: 1 })`
   font-size: 15px;
   font-weight: 700;
+  flex-shrink: 0;
 `;
 
 export const DangerOutlineBtn = styled.TouchableOpacity`
-  height: 48px;
+  min-height: 48px;
+  padding: 12px 18px;
   border-radius: 999px;
   border-width: 1px;
   align-items: center;
   justify-content: center;
 `;
 
-export const DangerOutlineText = styled.Text`
+export const DangerOutlineText = styled.Text.attrs({ numberOfLines: 1 })`
   font-size: 15px;
   font-weight: 700;
+  flex-shrink: 0;
 `;

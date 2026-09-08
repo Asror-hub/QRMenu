@@ -1078,13 +1078,15 @@ const FilterDoneBtn = styled.TouchableOpacity`
   border-radius: 14px;
   align-items: center;
   justify-content: center;
-  padding: 14px;
+  padding: 14px 18px;
+  min-height: 48px;
 `;
 
-const FilterDoneText = styled.Text`
+const FilterDoneText = styled.Text.attrs({ numberOfLines: 1 })`
   font-size: 15px;
   font-weight: 800;
   color: #ffffff;
+  flex-shrink: 0;
 `;
 
 const Centered = styled.View`

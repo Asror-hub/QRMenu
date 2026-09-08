@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { AppState, type AppStateStatus, Platform } from "react-native";
+import { Platform } from "react-native";
 import Constants from "expo-constants";
 
 const supabaseUrl =
@@ -53,33 +53,11 @@ if (!supabaseUrl || !supabaseAnonKey) {
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     storage: authStorage,
-    autoRefreshToken: true,
+    // IMPORTANT: leave false on Android emulators with wrong system clocks.
+    // Built-in auto refresh compares expires_at to Date.now() and will
+    // refresh-loop → rotate refresh token → SIGNED_OUT within seconds.
+    autoRefreshToken: false,
     persistSession: true,
     detectSessionInUrl: false,
   },
 });
-
-declare global {
-  // Prevent Expo Fast Refresh from stacking multiple AppState → refresh timers.
-  // Parallel refresh + refresh-token rotation = unexpected SIGNED_OUT.
-  // eslint-disable-next-line no-var
-  var __qrmenuAuthAppStateBound: boolean | undefined;
-}
-
-function bindAuthAppState() {
-  if (Platform.OS === "web" || global.__qrmenuAuthAppStateBound) return;
-  global.__qrmenuAuthAppStateBound = true;
-
-  const sync = (state: AppStateStatus) => {
-    if (state === "active") {
-      void supabase.auth.startAutoRefresh();
-    } else {
-      void supabase.auth.stopAutoRefresh();
-    }
-  };
-
-  sync(AppState.currentState);
-  AppState.addEventListener("change", sync);
-}
-
-bindAuthAppState();

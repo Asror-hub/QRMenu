@@ -103,11 +103,13 @@ const ConfirmMessage = styled.Text`
 `;
 const ConfirmActions = styled.View`
   flex-direction: row;
+  flex-wrap: wrap;
   gap: 10px;
   margin-top: 4px;
 `;
 const ConfirmCancelBtn = styled.TouchableOpacity<{ disabled?: boolean }>`
-  flex: 1;
+  flex-grow: 1;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
   padding: 13px 14px;
@@ -115,12 +117,14 @@ const ConfirmCancelBtn = styled.TouchableOpacity<{ disabled?: boolean }>`
   border-width: 1px;
   opacity: ${(p) => (p.disabled ? 0.6 : 1)};
 `;
-const ConfirmCancelText = styled.Text`
+const ConfirmCancelText = styled.Text.attrs({ numberOfLines: 1 })`
   font-size: 15px;
   font-weight: 800;
+  flex-shrink: 0;
 `;
 const ConfirmDeleteBtn = styled.TouchableOpacity<{ disabled?: boolean }>`
-  flex: 1;
+  flex-grow: 1;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
   padding: 13px 14px;
@@ -128,8 +132,9 @@ const ConfirmDeleteBtn = styled.TouchableOpacity<{ disabled?: boolean }>`
   background: #dc2626;
   opacity: ${(p) => (p.disabled ? 0.6 : 1)};
 `;
-const ConfirmDeleteText = styled.Text`
+const ConfirmDeleteText = styled.Text.attrs({ numberOfLines: 1 })`
   color: #fff;
   font-size: 15px;
   font-weight: 800;
+  flex-shrink: 0;
 `;

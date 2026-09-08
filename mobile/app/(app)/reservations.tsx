@@ -22,11 +22,13 @@ import styled from "styled-components/native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "expo-router";
 import { supabase } from "@/src/services/supabase";
+import { useAuth } from "@/src/context/AuthContext";
 import { useRestaurant } from "@/src/context/RestaurantContext";
 import { useTheme } from "@/src/context/ThemeContext";
 import { useLanguage } from "@/src/context/LanguageContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { PlanGate } from "@/src/components/PlanGate";
+import { getCorrectedNow, withAuthRetry } from "@/src/utils/authSession";
 
 type SlideToActionProps = {
   label: string;
@@ -239,12 +241,12 @@ function formatFilterDayMonth(date: Date, locale?: string) {
   });
 }
 
-function getDayOffsetForDate(date: Date) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+function getDayOffsetForDate(date: Date, today = new Date()) {
+  const start = new Date(today);
+  start.setHours(0, 0, 0, 0);
   const picked = new Date(date);
   picked.setHours(0, 0, 0, 0);
-  return Math.round((picked.getTime() - today.getTime()) / 86400000);
+  return Math.round((picked.getTime() - start.getTime()) / 86400000);
 }
 
 function formatTime(iso: string | null | undefined) {
@@ -506,6 +508,7 @@ function getReservationTableLabel(item: Reservation, tableNumberById: Record<str
 
 function ReservationsScreen() {
   const navigation = useNavigation();
+  const { session } = useAuth();
   const { restaurant } = useRestaurant();
   const { t, locale } = useLanguage();
   const { colors, theme } = useTheme();
@@ -555,15 +558,16 @@ function ReservationsScreen() {
   const [reservationsOnFormDay, setReservationsOnFormDay] = useState<Reservation[]>([]);
 
   const selectedDate = useMemo(() => {
-    const next = new Date();
+    const next = getCorrectedNow(session);
     next.setDate(next.getDate() + dayOffset);
     return next;
-  }, [dayOffset]);
+  }, [dayOffset, session]);
 
   const filterDayLabel = useMemo(() => formatFilterDayMonth(selectedDate, locale), [selectedDate, locale]);
 
   const onFilterDateValueChange = (_event: unknown, date: Date) => {
-    setDayOffset(getDayOffsetForDate(date));
+    if (!date || Number.isNaN(date.getTime())) return;
+    setDayOffset(getDayOffsetForDate(date, getCorrectedNow(session)));
     if (Platform.OS === "android") {
       setShowFilterDayPicker(false);
     }
@@ -649,13 +653,15 @@ function ReservationsScreen() {
       if (!restaurant?.id) return;
       try {
         const { start, end } = getDayBoundsForDateString(dayValue);
-        const { data, error } = await supabase
-          .from("reservations")
-          .select(RESERVATION_LIST_SELECT)
-          .eq("restaurant_id", restaurant.id)
-          .gte("reservation_date", start.toISOString())
-          .lt("reservation_date", end.toISOString())
-          .order("reservation_date", { ascending: true });
+        const { data, error } = await withAuthRetry(() =>
+          supabase
+            .from("reservations")
+            .select(RESERVATION_LIST_SELECT)
+            .eq("restaurant_id", restaurant.id)
+            .gte("reservation_date", start.toISOString())
+            .lt("reservation_date", end.toISOString())
+            .order("reservation_date", { ascending: true })
+        );
         if (error) throw error;
         setReservationsOnFormDay((data ?? []) as Reservation[]);
       } catch {
@@ -697,28 +703,34 @@ function ReservationsScreen() {
     setLoading(true);
     try {
       const { start, end } = getDayBounds(selectedDate);
-      let { data, error } = await supabase
-        .from("reservations")
-        .select(RESERVATION_LIST_SELECT)
-        .eq("restaurant_id", restaurant.id)
-        .gte("reservation_date", start.toISOString())
-        .lt("reservation_date", end.toISOString())
-        .order("reservation_date", { ascending: true });
-      if (error && /source|schema cache|column/i.test(String(error.message || ""))) {
-        ({ data, error } = await supabase
+      let { data, error } = await withAuthRetry(() =>
+        supabase
           .from("reservations")
-          .select(RESERVATION_LIST_SELECT_FALLBACK)
+          .select(RESERVATION_LIST_SELECT)
           .eq("restaurant_id", restaurant.id)
           .gte("reservation_date", start.toISOString())
           .lt("reservation_date", end.toISOString())
-          .order("reservation_date", { ascending: true }));
+          .order("reservation_date", { ascending: true })
+      );
+      if (error && /source|schema cache|column/i.test(String(error.message || ""))) {
+        ({ data, error } = await withAuthRetry(() =>
+          supabase
+            .from("reservations")
+            .select(RESERVATION_LIST_SELECT_FALLBACK)
+            .eq("restaurant_id", restaurant.id)
+            .gte("reservation_date", start.toISOString())
+            .lt("reservation_date", end.toISOString())
+            .order("reservation_date", { ascending: true })
+        ));
       }
       if (error) throw error;
       setReservations((data ?? []) as Reservation[]);
-      const { data: tableRows } = await supabase
-        .from("tables")
-        .select("id, table_number, table_name")
-        .eq("restaurant_id", restaurant.id);
+      const { data: tableRows } = await withAuthRetry(() =>
+        supabase
+          .from("tables")
+          .select("id, table_number, table_name")
+          .eq("restaurant_id", restaurant.id)
+      );
       const map: Record<string, number> = {};
       (tableRows ?? []).forEach((t) => {
         if (t?.id && typeof t.table_number === "number") {
@@ -733,7 +745,7 @@ function ReservationsScreen() {
     } finally {
       setLoading(false);
     }
-  }, [restaurant?.id, selectedDate]);
+  }, [restaurant?.id, selectedDate, t]);
 
   useEffect(() => {
     loadReservations();
@@ -836,12 +848,14 @@ function ReservationsScreen() {
         const w = getCandidateTimeBoundsFromForm(formData);
         if (w) {
           const { start, end } = getDayBoundsForDateString(formData.day);
-          const { data: dayRows, error: dayErr } = await supabase
-            .from("reservations")
-            .select(RESERVATION_LIST_SELECT)
-            .eq("restaurant_id", restaurant.id)
-            .gte("reservation_date", start.toISOString())
-            .lt("reservation_date", end.toISOString());
+          const { data: dayRows, error: dayErr } = await withAuthRetry(() =>
+            supabase
+              .from("reservations")
+              .select(RESERVATION_LIST_SELECT)
+              .eq("restaurant_id", restaurant.id)
+              .gte("reservation_date", start.toISOString())
+              .lt("reservation_date", end.toISOString())
+          );
           if (dayErr) throw dayErr;
           const taken = getBookedTableIdsForTimeWindow((dayRows ?? []) as Reservation[], w, editingReservationId);
           if (formData.tableIds.some((id) => taken.has(id))) {
@@ -2734,38 +2748,45 @@ const Half = styled.View`
 
 const FormActions = styled.View`
   flex-direction: row;
+  flex-wrap: wrap;
   gap: 10px;
   padding-top: 12px;
   border-top-width: 1px;
 `;
 
 const GhostBtn = styled.TouchableOpacity`
-  flex: 1;
-  height: 48px;
+  flex-grow: 1;
+  flex-shrink: 0;
+  min-height: 48px;
+  padding: 12px 16px;
   border-radius: 999px;
   border-width: 1px;
   align-items: center;
   justify-content: center;
 `;
 
-const GhostBtnText = styled.Text`
+const GhostBtnText = styled.Text.attrs({ numberOfLines: 1 })`
   font-size: 15px;
   font-weight: 700;
+  flex-shrink: 0;
 `;
 
 const PrimaryBtn = styled.TouchableOpacity`
-  flex: 1;
-  height: 48px;
+  flex-grow: 1;
+  flex-shrink: 0;
+  min-height: 48px;
+  padding: 12px 16px;
   border-radius: 999px;
   align-items: center;
   justify-content: center;
 `;
 
-const PrimaryBtnText = styled.Text`
+const PrimaryBtnText = styled.Text.attrs({ numberOfLines: 1 })`
   color: #fff;
   font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.2px;
+  flex-shrink: 0;
 `;
 
 const PickerSheetOverlay = styled.View`

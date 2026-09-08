@@ -33,6 +33,7 @@ type Restaurant = {
   stripe_enabled?: boolean | null;
   plan_id?: string | null;
   subscription_status?: string | null;
+  is_active?: boolean | null;
 } | null;
 
 type RestaurantContextValue = {
@@ -45,22 +46,30 @@ type RestaurantContextValue = {
 
 const RestaurantContext = createContext<RestaurantContextValue | null>(null);
 
-async function fetchRestaurantForUser(userId: string) {
-  const { data, error } = await withAuthRetry(() =>
-    supabase
-      .from("restaurants")
-      .select("*")
-      .eq("owner_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(1)
-  );
+async function fetchRestaurantForUser(userId: string, attempts = 3) {
+  for (let i = 0; i < attempts; i++) {
+    const { data, error } = await withAuthRetry(() =>
+      supabase
+        .from("restaurants")
+        .select("*")
+        .eq("owner_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+    );
 
-  if (error) {
-    console.warn("[Restaurant] load failed:", error.message);
-    return null;
+    if (error) {
+      console.warn("[Restaurant] load failed:", error.message);
+      return null;
+    }
+
+    const row = ((data ?? [])[0] as Restaurant) ?? null;
+    if (row) return row;
+    if (i < attempts - 1) {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+    }
   }
 
-  return ((data ?? [])[0] as Restaurant) ?? null;
+  return null;
 }
 
 export function RestaurantProvider({ children }: { children: ReactNode }) {

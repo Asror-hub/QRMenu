@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { RestaurantActions } from "../components/RestaurantActions";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../lib/supabase";
 import {
@@ -24,6 +25,7 @@ const emptyPayment = {
 
 export function RestaurantDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const createdLogin = useLocation().state?.createdLogin;
   const [row, setRow] = useState(null);
@@ -148,11 +150,25 @@ export function RestaurantDetailPage() {
             ← Restaurants
           </Link>
           <h1>{row.name}</h1>
+          <p className="muted">Created {formatDate(row.created_at)}</p>
           <p className="muted">
-            {row.email || "No email"} · {row.phone || "No phone"} · created {formatDate(row.created_at)}
+            Email {row.email || "—"}
+            <br />
+            Phone {row.phone || "—"}
           </p>
         </div>
+        <RestaurantActions
+          restaurant={row}
+          showManage={false}
+          onUpdated={(next) => setRow((current) => ({ ...current, ...next }))}
+          onDeleted={() => navigate("/", { replace: true })}
+        />
       </div>
+      {row.is_active === false ? (
+        <div className="banner banner--warn">
+          This restaurant is deactivated. Guests cannot open the QR menu, and owner apps are locked.
+        </div>
+      ) : null}
 
       {createdLogin ? (
         <div className="banner banner--ok">
@@ -161,6 +177,26 @@ export function RestaurantDetailPage() {
       ) : null}
       {error ? <p className="error">{error}</p> : null}
       {message ? <p className="ok">{message}</p> : null}
+
+      <div className="panel">
+        <h2>Contact</h2>
+        <div className="row-2">
+          <p className="field">
+            <span>Email</span>
+            <strong>{row.email || "—"}</strong>
+          </p>
+          <p className="field">
+            <span>Phone</span>
+            <strong>
+              {row.phone ? (
+                <a href={`tel:${String(row.phone).replace(/\s/g, "")}`}>{row.phone}</a>
+              ) : (
+                "—"
+              )}
+            </strong>
+          </p>
+        </div>
+      </div>
 
       <div className="grid-2">
         <form className="panel" onSubmit={saveAccess}>

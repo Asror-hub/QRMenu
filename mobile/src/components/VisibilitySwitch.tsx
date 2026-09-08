@@ -127,11 +127,11 @@ const ToggleOnlyWrap = styled.View`
 `;
 
 const Frame = styled.View<{ $wide?: boolean }>`
-  height: ${FRAME_H}px;
+  min-height: ${FRAME_H}px;
   flex-direction: row;
   align-items: center;
   gap: ${(p) => (p.$wide ? 8 : 6)}px;
-  padding: ${(p) => (p.$wide ? "0 8px" : "0 3px 0 8px")};
+  padding: ${(p) => (p.$wide ? "4px 8px" : "4px 3px 4px 8px")};
   border-radius: 999px;
   border-width: 1px;
   flex-shrink: ${(p) => (p.$wide ? 0 : 1)};

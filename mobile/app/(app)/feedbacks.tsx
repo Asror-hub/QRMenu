@@ -1018,16 +1018,18 @@ const CommentCard = styled.View`
 `;
 
 const AckButton = styled.TouchableOpacity`
-  height: 46px;
+  min-height: 46px;
+  padding: 12px 16px;
   border-radius: 14px;
   align-items: center;
   justify-content: center;
 `;
 
-const AckButtonText = styled.Text`
+const AckButtonText = styled.Text.attrs({ numberOfLines: 1 })`
   font-size: 14px;
   font-weight: 800;
   color: #111827;
+  flex-shrink: 0;
 `;
 
 const ItemsCard = styled.View`

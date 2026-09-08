@@ -1,6 +1,46 @@
+import { Platform } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Print from "expo-print";
 import type { Order, OrderItem } from "@/src/context/OrdersContext";
 import { formatCurrency } from "@/src/utils/currency";
+
+const PRINTER_KEY = "qrmenu_pos_bridge_printer";
+
+export type SavedPrinter = { name: string; url: string };
+
+export async function loadSavedPrinter(): Promise<SavedPrinter | null> {
+  try {
+    const raw = await AsyncStorage.getItem(PRINTER_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as SavedPrinter;
+    if (!parsed?.url) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+export async function savePrinter(printer: SavedPrinter): Promise<void> {
+  await AsyncStorage.setItem(PRINTER_KEY, JSON.stringify(printer));
+}
+
+export async function clearSavedPrinter(): Promise<void> {
+  await AsyncStorage.removeItem(PRINTER_KEY);
+}
+
+/** iOS AirPrint picker. Returns null if cancelled or not iOS. */
+export async function pickPrinter(): Promise<SavedPrinter | null> {
+  if (Platform.OS !== "ios") return null;
+  try {
+    const printer = await Print.selectPrinterAsync();
+    if (!printer?.url) return null;
+    const saved = { name: printer.name, url: printer.url };
+    await savePrinter(saved);
+    return saved;
+  } catch {
+    return null;
+  }
+}
 
 export function buildReceiptHtml(
   order: Order,
@@ -64,7 +104,7 @@ export function buildReceiptHtml(
   ${commentBlock}
   <p class="total">TOTAL: ${formatCurrency(total, currency)}</p>
   <hr>
-  <p class="center" style="font-size:11px">QRMenu</p>
+  <p class="center" style="font-size:11px">SmartQr</p>
 </body>
 </html>
 `;
@@ -73,8 +113,12 @@ export function buildReceiptHtml(
 export async function printOrderTicket(
   order: Order,
   restaurantName: string,
-  currency: string
+  currency: string,
+  printerUrl?: string | null
 ) {
   const html = buildReceiptHtml(order, restaurantName, currency);
-  await Print.printAsync({ html });
+  await Print.printAsync({
+    html,
+    ...(printerUrl ? { printerUrl } : {}),
+  });
 }

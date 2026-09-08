@@ -29,6 +29,7 @@ import { hasPlanFeature, type PlanFeature } from "@/src/utils/planFeatures";
 const OPERATE_FEATURE: Partial<Record<string, PlanFeature>> = {
   "submit-order": "staffOrders",
   reservations: "reservations",
+  feedbacks: "feedbacks",
 };
 
 function TabletGlassFill({ isLight }: { isLight: boolean }) {
@@ -103,6 +104,33 @@ const OPERATE_ITEMS: LinkItem[] = [
     ink: "#ff6600",
   },
   {
+    id: "history",
+    labelKey: "tileHistory",
+    hintKey: "tileHistoryHint",
+    route: "/(app)/history",
+    icon: "time",
+    ink: "#0f766e",
+  },
+  {
+    id: "reservations",
+    labelKey: "tileReserve",
+    hintKey: "tileReserveHint",
+    route: "/(app)/reservations",
+    icon: "calendar",
+    ink: "#16a34a",
+  },
+  {
+    id: "feedbacks",
+    labelKey: "tileFeedbacks",
+    hintKey: "tileFeedbacksHint",
+    route: "/(app)/feedbacks",
+    icon: "star",
+    ink: "#f59e0b",
+  },
+];
+
+const MANAGE_ITEMS: LinkItem[] = [
+  {
     id: "categories",
     labelKey: "tileMenu",
     hintKey: "tileMenuHint",
@@ -119,39 +147,12 @@ const OPERATE_ITEMS: LinkItem[] = [
     ink: "#0284c7",
   },
   {
-    id: "reservations",
-    labelKey: "tileReserve",
-    hintKey: "tileReserveHint",
-    route: "/(app)/reservations",
-    icon: "calendar",
-    ink: "#16a34a",
-  },
-];
-
-const MANAGE_ITEMS: LinkItem[] = [
-  {
     id: "dashboard",
     labelKey: "tileAnalytics",
     hintKey: "tileAnalyticsHint",
     route: "/(app)/dashboard",
     icon: "stats-chart",
     ink: "#ff6600",
-  },
-  {
-    id: "history",
-    labelKey: "tileHistory",
-    hintKey: "tileHistoryHint",
-    route: "/(app)/history",
-    icon: "time",
-    ink: "#0f766e",
-  },
-  {
-    id: "feedbacks",
-    labelKey: "tileFeedbacks",
-    hintKey: "tileFeedbacksHint",
-    route: "/(app)/feedbacks",
-    icon: "star",
-    ink: "#f59e0b",
   },
   {
     id: "settings",
@@ -411,15 +412,7 @@ export default function HomeScreen() {
     const cellWidth = (shellWidth - gridGap * (gridCols - 1)) / gridCols;
     const cellHeight = Math.max(148, Math.min(176, cellWidth * 0.92));
     const featuredWidth = cellWidth * 2 + gridGap;
-    const operateTiles = operateItems.map((item) => item);
-    const tablesIdx = operateTiles.findIndex((item) => item.id === "tables");
-    const reserveIdx = operateTiles.findIndex((item) => item.id === "reservations");
-    if (tablesIdx >= 0 && reserveIdx >= 0) {
-      const temp = operateTiles[tablesIdx];
-      operateTiles[tablesIdx] = operateTiles[reserveIdx];
-      operateTiles[reserveIdx] = temp;
-    }
-    const navTiles = [...operateTiles, ...MANAGE_ITEMS];
+    const navTiles = [...operateItems, ...MANAGE_ITEMS];
 
     return (
       <Container style={{ backgroundColor: pageBg }}>
@@ -783,7 +776,7 @@ export default function HomeScreen() {
                       </StageCardLabel>
                     </StageCardBrandRow>
                     <StageCardTitle style={{ color: colors.text }}>
-                      {hasPending ? t("newTicketsWaiting") : t("allCaughtUp")}
+                      {hasPending ? t("homeNewOrder") : t("allCaughtUp")}
                     </StageCardTitle>
                     <StageCardSub style={{ color: colors.textMuted }}>
                       {hasPending ? t("incomingTicketsReady") : t("boardQuietShort")}
@@ -858,34 +851,63 @@ export default function HomeScreen() {
                 <SectionTitle style={{ color: colors.text }}>{t("sectionOperate")}</SectionTitle>
               </SectionHeader>
               <OperatePanel style={{ backgroundColor: cardBg, borderColor: hairline }}>
-                {operateItems.map((item, index) => (
+                {operateItems.map((item, index) => {
+                  const alert = item.id === "feedbacks" && hasIncomingFeedback;
+                  const rowOpacity = alert
+                    ? feedbackPulse.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [1, 0.72],
+                      })
+                    : 1;
+                  return (
+                  <Animated.View key={item.id} style={{ opacity: rowOpacity }}>
                   <OperateRow
-                    key={item.id}
                     onPress={() => handlePress(item.route)}
                     activeOpacity={0.72}
                     style={{
                       borderBottomWidth: index === operateItems.length - 1 ? 0 : 1,
                       borderBottomColor: hairline,
+                      backgroundColor: alert
+                        ? isLight
+                          ? "rgba(245, 158, 11, 0.1)"
+                          : "rgba(245, 158, 11, 0.16)"
+                        : "transparent",
                     }}
                   >
-                    <OperateIcon style={{ backgroundColor: item.ink }}>
-                      <Ionicons name={item.icon} size={18} color="#ffffff" />
+                    <OperateIcon
+                      style={{
+                        backgroundColor: isLight
+                          ? `${item.ink}18`
+                          : "rgba(255,255,255,0.08)",
+                      }}
+                    >
+                      <Ionicons name={item.icon} size={18} color={item.ink} />
                     </OperateIcon>
                     <OperateCopy>
                       <OperateLabel style={{ color: colors.text }} numberOfLines={1}>
                         {t(item.labelKey)}
+                        {alert ? `  ·  ${incomingFeedbackCount}` : ""}
                       </OperateLabel>
                       <OperateHint style={{ color: colors.textMuted }} numberOfLines={2}>
-                        {t(item.hintKey)}
+                        {alert ? t("feedbackIncomingHint") : t(item.hintKey)}
                       </OperateHint>
                     </OperateCopy>
-                    <Ionicons
-                      name="chevron-forward"
-                      size={16}
-                      color={colors.textMuted}
-                    />
+                    {alert ? (
+                      <FeedbackCountPill>
+                        <FeedbackCountText>{incomingFeedbackCount}</FeedbackCountText>
+                        <Ionicons name="star" size={11} color={STAR_FEEDBACK} />
+                      </FeedbackCountPill>
+                    ) : (
+                      <Ionicons
+                        name="chevron-forward"
+                        size={16}
+                        color={colors.textMuted}
+                      />
+                    )}
                   </OperateRow>
-                ))}
+                  </Animated.View>
+                  );
+                })}
               </OperatePanel>
             </OperateSection>
 
@@ -894,31 +916,14 @@ export default function HomeScreen() {
                 <SectionTitle style={{ color: colors.text }}>{t("sectionManage")}</SectionTitle>
               </SectionHeader>
               <ManagePanel style={{ backgroundColor: cardBg, borderColor: hairline }}>
-                {MANAGE_ITEMS.map((item, index) => {
-                  const isFeedbacks = item.id === "feedbacks";
-                  const alert = isFeedbacks && hasIncomingFeedback;
-                  const rowOpacity = alert
-                    ? feedbackPulse.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [1, 0.72],
-                      })
-                    : 1;
-                  return (
-                  <Animated.View
-                    key={item.id}
-                    style={{ opacity: rowOpacity }}
-                  >
+                {MANAGE_ITEMS.map((item, index) => (
                   <ManageRow
+                    key={item.id}
                     onPress={() => handlePress(item.route)}
                     activeOpacity={0.72}
                     style={{
                       borderBottomWidth: index === MANAGE_ITEMS.length - 1 ? 0 : 1,
                       borderBottomColor: hairline,
-                      backgroundColor: alert
-                        ? isLight
-                          ? "rgba(245, 158, 11, 0.1)"
-                          : "rgba(245, 158, 11, 0.16)"
-                        : "transparent",
                     }}
                   >
                     <ManageIcon
@@ -933,28 +938,18 @@ export default function HomeScreen() {
                     <ManageCopy>
                       <ManageLabel style={{ color: colors.text }}>
                         {t(item.labelKey)}
-                        {alert ? `  ·  ${incomingFeedbackCount}` : ""}
                       </ManageLabel>
                       <ManageHint style={{ color: colors.textMuted }}>
-                        {alert ? t("feedbackIncomingHint") : t(item.hintKey)}
+                        {t(item.hintKey)}
                       </ManageHint>
                     </ManageCopy>
-                    {alert ? (
-                      <FeedbackCountPill>
-                        <FeedbackCountText>{incomingFeedbackCount}</FeedbackCountText>
-                        <Ionicons name="star" size={11} color={STAR_FEEDBACK} />
-                      </FeedbackCountPill>
-                    ) : (
-                      <Ionicons
-                        name="chevron-forward"
-                        size={16}
-                        color={colors.textMuted}
-                      />
-                    )}
+                    <Ionicons
+                      name="chevron-forward"
+                      size={16}
+                      color={colors.textMuted}
+                    />
                   </ManageRow>
-                  </Animated.View>
-                  );
-                })}
+                ))}
               </ManagePanel>
             </ManageSection>
           </Content>

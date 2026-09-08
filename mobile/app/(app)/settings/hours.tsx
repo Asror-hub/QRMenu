@@ -517,15 +517,17 @@ const PickerClose = styled.TouchableOpacity`
 `;
 
 const DoneBtn = styled.TouchableOpacity`
-  height: 48px;
+  min-height: 48px;
+  padding: 12px 18px;
   border-radius: 999px;
   align-items: center;
   justify-content: center;
   margin-top: 8px;
 `;
 
-const DoneBtnText = styled.Text`
+const DoneBtnText = styled.Text.attrs({ numberOfLines: 1 })`
   color: #fff;
   font-size: 15px;
   font-weight: 700;
+  flex-shrink: 0;
 `;

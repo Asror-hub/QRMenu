@@ -918,23 +918,27 @@ const FormStatusLabel = styled.Text`
 `;
 const FormActions = styled.View`
   flex-direction: row;
+  flex-wrap: wrap;
   gap: 10px;
   margin-top: 18px;
 `;
 const FormCancelBtn = styled.TouchableOpacity`
-  flex: 1;
+  flex-grow: 1;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
   padding: 14px 16px;
   border-radius: 999px;
   border-width: 1px;
 `;
-const FormCancelText = styled.Text`
+const FormCancelText = styled.Text.attrs({ numberOfLines: 1 })`
   font-size: 15px;
   font-weight: 800;
+  flex-shrink: 0;
 `;
 const FormSaveBtn = styled.TouchableOpacity`
-  flex: 1;
+  flex-grow: 1;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
   padding: 14px 16px;
@@ -942,8 +946,9 @@ const FormSaveBtn = styled.TouchableOpacity`
   background: #ff6600;
   opacity: ${(p) => (p.disabled ? 0.6 : 1)};
 `;
-const FormSaveText = styled.Text`
+const FormSaveText = styled.Text.attrs({ numberOfLines: 1 })`
   color: #fff;
   font-size: 15px;
   font-weight: 800;
+  flex-shrink: 0;
 `;

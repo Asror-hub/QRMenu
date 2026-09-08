@@ -8,12 +8,11 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import * as Haptics from "expo-haptics";
-import { Audio } from "expo-av";
 import { supabase } from "../services/supabase";
 import { useRestaurant } from "./RestaurantContext";
 import { useOrders } from "./OrdersContext";
 import { withAuthRetry } from "../utils/authSession";
+import { playNotificationBeep } from "../utils/notificationSound";
 
 const ALARM_MS = 6000;
 const POLL_MS = 10000;
@@ -35,26 +34,7 @@ const FeedbackAlertsContext = createContext<FeedbackAlertsContextValue | null>(
 );
 
 async function playBeep() {
-  try {
-    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    await Audio.setAudioModeAsync({
-      playsInSilentModeIOS: true,
-      staysActiveInBackground: false,
-      shouldDuckAndroid: true,
-      playThroughEarpieceAndroid: false,
-    });
-    const { sound } = await Audio.Sound.createAsync(
-      require("../../assets/sounds/notification.mp3"),
-      { shouldPlay: true }
-    );
-    sound.setOnPlaybackStatusUpdate((status) => {
-      if (status.isLoaded && status.didJustFinish) {
-        sound.unloadAsync().catch(() => {});
-      }
-    });
-  } catch {
-    // ignore
-  }
+  await playNotificationBeep();
 }
 
 export function FeedbackAlertsProvider({ children }: { children: ReactNode }) {

@@ -43,10 +43,10 @@ const ORDER_STATUS_COLORS: Record<
 const getStatusColor = (status: string) =>
   ORDER_STATUS_COLORS[status] ?? ORDER_STATUS_COLORS.pending;
 
-function formatOrderLogTime(iso: string | null | undefined): string {
+function formatOrderLogTime(iso: string | null | undefined, locale?: string): string {
   if (!iso) return "—";
   const d = new Date(iso);
-  return d.toLocaleString(undefined, {
+  return d.toLocaleString(locale || undefined, {
     month: "short",
     day: "numeric",
     hour: "2-digit",
@@ -425,7 +425,7 @@ function PrepTimerCircle({ order, prepTimeMins, colors }: PrepTimerCircleProps) 
 export default function Orders() {
   const { orders, loadOrders, soundEnabled, toggleSound, updateStatus, orderStatusChannelRef } = useOrders();
   const { restaurant, updateRestaurant } = useRestaurant();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const currency = restaurant?.currency ?? "USD";
   const { colors, theme } = useTheme();
   const isLight = theme === "light";
@@ -714,7 +714,7 @@ export default function Orders() {
                 }}
               />
             </ToggleTrack>
-            <ToggleLabel style={{ color: colors.text }}>Auto Accept</ToggleLabel>
+            <ToggleLabel style={{ color: colors.text }}>{t("ordersAutoAccept")}</ToggleLabel>
           </TogglePill>
 
           <TogglePill
@@ -781,12 +781,12 @@ export default function Orders() {
   ]);
 
   const formatTableLabel = (order: Order) => {
-    const name = order.tables?.table_name;
+    const name = order.tables?.table_name?.trim();
     const number = order.tables?.table_number;
-    if (name && number) return `${name} ${number}`;
+    if (name && number != null) return `${name} ${number}`;
     if (name) return name;
-    if (number) return `Table ${number}`;
-    return `Table ${order.table_id ?? "---"}`;
+    if (number != null) return `${t("table")} ${number}`;
+    return t("table");
   };
 
   const ordersListBlock = (
@@ -1070,7 +1070,9 @@ export default function Orders() {
                         </QtyBadgeText>
                       </QtyBadge>
                       <ItemNameText style={{ color: colors.text }} numberOfLines={3}>
-                        {item.name}
+                        {(item as OrderItem & { type?: string }).type === "waiter_call"
+                          ? t("ordersWaiterRequest")
+                          : item.name}
                       </ItemNameText>
                       <LineTotal style={{ color: colors.text }}>
                         {formatCurrency(price * qty, currency)}
@@ -1101,7 +1103,7 @@ export default function Orders() {
               onPress={() => setOrderLogsExpanded((e) => !e)}
               activeOpacity={0.75}
             >
-              <OrderLogsTitle style={{ color: colors.text }}>Order logs</OrderLogsTitle>
+              <OrderLogsTitle style={{ color: colors.text }}>{t("ordersLogs")}</OrderLogsTitle>
               <Ionicons
                 name={orderLogsExpanded ? "chevron-up" : "chevron-down"}
                 size={18}
@@ -1111,34 +1113,34 @@ export default function Orders() {
             {orderLogsExpanded && (
               <OrderLogsContent>
                 <OrderLogRow style={{ borderBottomColor: rowRule }}>
-                  <OrderLogLabel style={{ color: colors.textMuted }}>Entered</OrderLogLabel>
+                  <OrderLogLabel style={{ color: colors.textMuted }}>{t("ordersLogEntered")}</OrderLogLabel>
                   <OrderLogTime style={{ color: colors.text }}>
-                    {formatOrderLogTime(order.created_at)}
+                    {formatOrderLogTime(order.created_at, locale)}
                   </OrderLogTime>
                 </OrderLogRow>
                 {(order.status === "accepted" ||
                   order.status === "ready" ||
                   order.status === "finish") && (
                   <OrderLogRow style={{ borderBottomColor: rowRule }}>
-                    <OrderLogLabel style={{ color: colors.textMuted }}>Accepted</OrderLogLabel>
+                    <OrderLogLabel style={{ color: colors.textMuted }}>{t("ordersLogAccepted")}</OrderLogLabel>
                     <OrderLogTime style={{ color: colors.text }}>
-                      {formatOrderLogTime(order.accepted_at)}
+                      {formatOrderLogTime(order.accepted_at, locale)}
                     </OrderLogTime>
                   </OrderLogRow>
                 )}
                 {(order.status === "ready" || order.status === "finish") && (
                   <OrderLogRow style={{ borderBottomColor: rowRule }}>
-                    <OrderLogLabel style={{ color: colors.textMuted }}>Ready</OrderLogLabel>
+                    <OrderLogLabel style={{ color: colors.textMuted }}>{t("ordersLogReady")}</OrderLogLabel>
                     <OrderLogTime style={{ color: colors.text }}>
-                      {formatOrderLogTime(order.ready_at)}
+                      {formatOrderLogTime(order.ready_at, locale)}
                     </OrderLogTime>
                   </OrderLogRow>
                 )}
                 {order.status === "finish" && (
                   <OrderLogRow style={{ borderBottomWidth: 0 }}>
-                    <OrderLogLabel style={{ color: colors.textMuted }}>Finished</OrderLogLabel>
+                    <OrderLogLabel style={{ color: colors.textMuted }}>{t("ordersLogFinished")}</OrderLogLabel>
                     <OrderLogTime style={{ color: colors.text }}>
-                      {formatOrderLogTime(order.finished_at)}
+                      {formatOrderLogTime(order.finished_at, locale)}
                     </OrderLogTime>
                   </OrderLogRow>
                 )}
@@ -1298,7 +1300,7 @@ export default function Orders() {
               <ModalHeaderRow>
                 <ModalSpacer />
                 <ModalTitle style={{ color: colors.text }} numberOfLines={1}>
-                  Order Details
+                  {t("ordersDetailsTitle")}
                 </ModalTitle>
                 <ModalCloseBtn
                   onPress={() => setSelectedOrder(null)}
@@ -1344,6 +1346,8 @@ const Container = styled.View`flex: 1;`;
 const HeaderControls = styled.View`
   flex-direction: row;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
 `;
 const TogglePill = styled.TouchableOpacity`
   flex-direction: row;
@@ -1352,6 +1356,7 @@ const TogglePill = styled.TouchableOpacity`
   border-radius: 999px;
   padding: 5px 10px 5px 8px;
   margin-right: 8px;
+  flex-shrink: 0;
 `;
 const ToggleTrack = styled.View`
   width: 32px;
@@ -1374,10 +1379,11 @@ const ToggleIconWrap = styled.View`
   justify-content: center;
   margin-right: 0px;
 `;
-const ToggleLabel = styled.Text`
+const ToggleLabel = styled.Text.attrs({ numberOfLines: 1 })`
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.2px;
+  flex-shrink: 0;
 `;
 const MainContent = styled.View<{ $tablet: boolean }>`
   flex: 1;
@@ -1767,6 +1773,7 @@ const OrderTotalValue = styled.Text`
 `;
 const Actions = styled.View`
   flex-direction: row;
+  flex-wrap: wrap;
   gap: 8px;
 `;
 const ActionBtnShell = styled.TouchableOpacity`
@@ -1780,20 +1787,22 @@ const ActionBtnShell = styled.TouchableOpacity`
 const ActionBtnContent = styled.View`
   z-index: 1;
   min-height: 50px;
-  padding: 14px;
+  padding: 12px 16px;
   align-items: center;
   justify-content: center;
 `;
-const ActionBtnText = styled.Text`
+const ActionBtnText = styled.Text.attrs({ numberOfLines: 1 })`
   color: #fff;
   font-weight: 800;
   font-size: 15px;
   letter-spacing: -0.2px;
+  flex-shrink: 0;
 `;
-const DeleteBtnText = styled.Text`
+const DeleteBtnText = styled.Text.attrs({ numberOfLines: 1 })`
   color: #fff;
   font-weight: 800;
   font-size: 15px;
+  flex-shrink: 0;
 `;
 const EmptyState = styled.Text`
   text-align: center;

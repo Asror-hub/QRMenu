@@ -428,10 +428,84 @@ h2 {
   background: transparent;
 }
 
+.btn--ok {
+  background: rgba(31, 138, 114, 0.12);
+  border-color: rgba(31, 138, 114, 0.28);
+  color: var(--ok);
+}
+
+.btn--warn {
+  background: rgba(168, 114, 61, 0.12);
+  border-color: rgba(168, 114, 61, 0.28);
+  color: var(--warn);
+}
+
+.btn--danger {
+  background: rgba(196, 93, 74, 0.12);
+  border-color: rgba(196, 93, 74, 0.28);
+  color: var(--danger);
+}
+
 .btn--sm {
   padding: 0.42rem 0.75rem;
   font-size: 0.84rem;
   border-radius: 0.65rem;
+}
+
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+.table td.right .row-actions {
+  min-width: 16.5rem;
+}
+
+.media-card .row-actions {
+  justify-content: stretch;
+}
+
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+  background: rgba(8, 17, 31, 0.46);
+}
+
+.confirm-card {
+  width: min(100%, 440px);
+  padding: 1.25rem 1.3rem 1.15rem;
+  border-radius: 1.1rem;
+  background: #fff;
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.confirm-card h2 {
+  margin: 0 0 0.45rem;
+}
+
+.confirm-card p {
+  margin: 0 0 0.7rem;
+}
+
+.pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.media-card__top .pill-row {
+  justify-content: flex-end;
+}
+
+.page-head .row-actions {
+  align-self: center;
 }
 
 .table-wrap {
@@ -445,7 +519,7 @@ h2 {
 .table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 780px;
+  min-width: 960px;
 }
 
 .table th,
@@ -505,6 +579,11 @@ h2 {
 }
 
 .pill--canceled {
+  background: rgba(196, 93, 74, 0.14);
+  color: var(--danger);
+}
+
+.pill--inactive {
   background: rgba(196, 93, 74, 0.14);
   color: var(--danger);
 }
@@ -736,6 +815,20 @@ h2 {
 
   .btn--sm {
     min-height: 42px;
+    width: 100%;
+  }
+
+  .row-actions {
+    justify-content: stretch;
+  }
+
+  .row-actions .btn,
+  .row-actions a.btn {
+    flex: 1;
+    text-align: center;
+  }
+
+  .page-head .row-actions {
     width: 100%;
   }
 

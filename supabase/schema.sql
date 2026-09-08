@@ -17,12 +17,13 @@ create table if not exists restaurants (
   sound_alerts boolean default true,
   prep_time integer,
   email_alerts boolean default true,
-  status_updates boolean default false
+  status_updates boolean default false,
+  is_active boolean not null default true
 );
 
 create table if not exists restaurant_hours (
   id uuid primary key default uuid_generate_v4(),
-  restaurant_id uuid references restaurants (id),
+  restaurant_id uuid references restaurants (id) on delete cascade,
   day_of_week integer not null,
   open_time time,
   close_time time,
@@ -32,7 +33,7 @@ create table if not exists restaurant_hours (
 
 create table if not exists tables (
   id uuid primary key default uuid_generate_v4(),
-  restaurant_id uuid references restaurants (id),
+  restaurant_id uuid references restaurants (id) on delete cascade,
   table_number integer not null,
   table_name text,
   map_x numeric,
@@ -42,7 +43,7 @@ create table if not exists tables (
 
 create table if not exists categories (
   id uuid primary key default uuid_generate_v4(),
-  restaurant_id uuid references restaurants (id),
+  restaurant_id uuid references restaurants (id) on delete cascade,
   name text not null,
   order_index integer,
   available boolean default true
@@ -50,8 +51,8 @@ create table if not exists categories (
 
 create table if not exists menu_items (
   id uuid primary key default uuid_generate_v4(),
-  restaurant_id uuid references restaurants (id),
-  category_id uuid references categories (id),
+  restaurant_id uuid references restaurants (id) on delete cascade,
+  category_id uuid references categories (id) on delete cascade,
   name text not null,
   description text,
   price numeric not null,
@@ -63,8 +64,8 @@ create table if not exists menu_items (
 
 create table if not exists orders (
   id uuid primary key default uuid_generate_v4(),
-  restaurant_id uuid references restaurants (id),
-  table_id uuid references tables (id),
+  restaurant_id uuid references restaurants (id) on delete cascade,
+  table_id uuid references tables (id) on delete set null,
   items jsonb not null,
   comment text,
   order_number integer not null default (floor(random() * 900) + 100),

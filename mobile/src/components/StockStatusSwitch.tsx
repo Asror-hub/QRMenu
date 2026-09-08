@@ -38,13 +38,14 @@ export function StockStatusSwitch({
   const inStockLabel = t("inStock");
   const soldOutLabel = t("soldOut");
   const stockStatusLabel = t("stockStatus");
-  const progress = useRef(new Animated.Value(soldOut ? 1 : 0)).current;
+  // 0 = sold out (left), 1 = in stock (right) — same on/off direction as a normal switch
+  const progress = useRef(new Animated.Value(soldOut ? 0 : 1)).current;
   const lockedRef = useRef(false);
 
   useEffect(() => {
     lockedRef.current = false;
     Animated.spring(progress, {
-      toValue: soldOut ? 1 : 0,
+      toValue: soldOut ? 0 : 1,
       useNativeDriver: false,
       friction: 8,
       tension: 180,
@@ -59,27 +60,27 @@ export function StockStatusSwitch({
 
   const thumbBg = progress.interpolate({
     inputRange: [0, 1],
-    outputRange: [GREEN, RED],
+    outputRange: [RED, GREEN],
   });
 
   const checkActive = progress.interpolate({
     inputRange: [0, 1],
-    outputRange: [1, 0],
+    outputRange: [0, 1],
   });
 
   const banActive = progress.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, 1],
+    outputRange: [1, 0],
   });
 
   const checkScale = progress.interpolate({
     inputRange: [0, 1],
-    outputRange: [1, 0.9],
+    outputRange: [0.9, 1],
   });
 
   const banScale = progress.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.9, 1],
+    outputRange: [1, 0.9],
   });
 
   const frameBg = isLight ? "rgba(28, 25, 23, 0.05)" : "rgba(255,255,255,0.08)";
@@ -107,23 +108,6 @@ export function StockStatusSwitch({
         />
 
         <Slot
-          onPress={() => select(false)}
-          accessibilityRole="button"
-          accessibilityLabel={inStockLabel}
-          accessibilityState={{ selected: !soldOut }}
-          hitSlop={4}
-        >
-          <Animated.View style={[styles.iconBox, { transform: [{ scale: checkScale }] }]}>
-            <Animated.View style={[styles.iconLayer, { opacity: checkActive }]}>
-              <Ionicons name="checkmark-sharp" size={15} color="#fff" />
-            </Animated.View>
-            <Animated.View style={[styles.iconLayer, { opacity: Animated.subtract(1, checkActive) }]}>
-              <Ionicons name="checkmark-sharp" size={15} color={mutedColor} />
-            </Animated.View>
-          </Animated.View>
-        </Slot>
-
-        <Slot
           onPress={() => select(true)}
           accessibilityRole="button"
           accessibilityLabel={soldOutLabel}
@@ -136,6 +120,23 @@ export function StockStatusSwitch({
             </Animated.View>
             <Animated.View style={[styles.iconLayer, { opacity: Animated.subtract(1, banActive) }]}>
               <Ionicons name="ban" size={13} color={mutedColor} />
+            </Animated.View>
+          </Animated.View>
+        </Slot>
+
+        <Slot
+          onPress={() => select(false)}
+          accessibilityRole="button"
+          accessibilityLabel={inStockLabel}
+          accessibilityState={{ selected: !soldOut }}
+          hitSlop={4}
+        >
+          <Animated.View style={[styles.iconBox, { transform: [{ scale: checkScale }] }]}>
+            <Animated.View style={[styles.iconLayer, { opacity: checkActive }]}>
+              <Ionicons name="checkmark-sharp" size={15} color="#fff" />
+            </Animated.View>
+            <Animated.View style={[styles.iconLayer, { opacity: Animated.subtract(1, checkActive) }]}>
+              <Ionicons name="checkmark-sharp" size={15} color={mutedColor} />
             </Animated.View>
           </Animated.View>
         </Slot>
@@ -205,11 +206,11 @@ const ToggleOnlyWrap = styled.View`
 `;
 
 const Frame = styled.View<{ $wide?: boolean }>`
-  height: ${FRAME_H}px;
+  min-height: ${FRAME_H}px;
   flex-direction: row;
   align-items: center;
   gap: ${(p) => (p.$wide ? 8 : 6)}px;
-  padding: ${(p) => (p.$wide ? "0 8px" : "0 3px 0 8px")};
+  padding: ${(p) => (p.$wide ? "4px 8px" : "4px 3px 4px 8px")};
   border-radius: 999px;
   border-width: 1px;
   flex-shrink: ${(p) => (p.$wide ? 0 : 1)};

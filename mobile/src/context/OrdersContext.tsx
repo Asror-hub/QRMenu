@@ -8,11 +8,10 @@ import {
   type ReactNode,
 } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as Haptics from "expo-haptics";
-import { Audio } from "expo-av";
 import { supabase } from "../services/supabase";
 import { useRestaurant } from "./RestaurantContext";
 import { withAuthRetry } from "../utils/authSession";
+import { playNotificationBeep } from "../utils/notificationSound";
 
 export type OrderItem = { id?: string; name?: string; price?: number; quantity?: number; type?: string };
 export type Order = {
@@ -54,26 +53,7 @@ type OrdersContextValue = {
 const OrdersContext = createContext<OrdersContextValue | null>(null);
 
 async function playBeep() {
-  try {
-    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    await Audio.setAudioModeAsync({
-      playsInSilentModeIOS: true,
-      staysActiveInBackground: false,
-      shouldDuckAndroid: true,
-      playThroughEarpieceAndroid: false,
-    });
-    const { sound } = await Audio.Sound.createAsync(
-      require("../../assets/sounds/notification.mp3"),
-      { shouldPlay: true }
-    );
-    sound.setOnPlaybackStatusUpdate((status) => {
-      if (status.isLoaded && status.didJustFinish) {
-        sound.unloadAsync().catch(() => {});
-      }
-    });
-  } catch {
-    // ignore
-  }
+  await playNotificationBeep();
 }
 
 export function OrdersProvider({ children }: { children: ReactNode }) {

@@ -1,95 +1,41 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Text, Switch, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
+import { Text, Switch, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as Print from "expo-print";
 import styled from "styled-components/native";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "@/src/services/supabase";
 import { useRestaurant } from "@/src/context/RestaurantContext";
 import { useTheme } from "@/src/context/ThemeContext";
-import type { Order, OrderItem } from "@/src/context/OrdersContext";
-import { formatCurrency } from "@/src/utils/currency";
+import { useLanguage } from "@/src/context/LanguageContext";
+import type { Order } from "@/src/context/OrdersContext";
 import { PlanGate } from "@/src/components/PlanGate";
+import {
+  loadSavedPrinter,
+  pickPrinter,
+  printOrderTicket,
+  type SavedPrinter,
+} from "@/src/utils/receiptPrint";
 
 const PRINTED_IDS_KEY = "qrmenu_pos_bridge_printed_ids";
 const ENABLED_KEY = "qrmenu_pos_bridge_enabled";
 const MAX_STORED_IDS = 500;
 
-function buildReceiptHtml(order: Order, restaurantName: string, currency: string): string {
-  const tableLabel =
-    order.tables?.table_name && order.tables?.table_number
-      ? `${order.tables.table_name} ${order.tables.table_number}`
-      : order.tables?.table_number
-        ? `Table ${order.tables.table_number}`
-        : `Table ${order.table_id ?? "—"}`;
-  const time = order.accepted_at
-    ? new Date(order.accepted_at).toLocaleString()
-    : order.created_at
-      ? new Date(order.created_at).toLocaleString()
-      : "—";
-
-  const itemsHtml = (order.items ?? [])
-    .map((item: OrderItem) => {
-      const qty = item.quantity ?? 1;
-      const name = item.name ?? "—";
-      const price = Number(item.price ?? 0) * qty;
-      return `<tr><td>${qty}x ${name}</td><td style="text-align:right">${formatCurrency(price, currency)}</td></tr>`;
-    })
-    .join("");
-
-  const total = (order.items ?? []).reduce(
-    (sum: number, i: OrderItem) => sum + Number(i.price ?? 0) * Number(i.quantity ?? 0),
-    0
-  );
-  const commentBlock = order.comment
-    ? `<p><strong>Comment:</strong> ${order.comment}</p>`
-    : "";
-
-  return `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <style>
-    body { font-family: monospace; font-size: 14px; padding: 12px; margin: 0; max-width: 300px; }
-    h2 { margin: 0 0 8px 0; font-size: 16px; text-align: center; }
-    p { margin: 4px 0; }
-    table { width: 100%; border-collapse: collapse; }
-    td { padding: 2px 0; }
-    .total { font-weight: bold; margin-top: 8px; border-top: 1px dashed #000; padding-top: 8px; }
-    .center { text-align: center; }
-  </style>
-</head>
-<body>
-  <h2>${restaurantName}</h2>
-  <p class="center"><strong>Order #${order.order_number ?? "—"}</strong></p>
-  <p class="center">${tableLabel}</p>
-  <p class="center" style="font-size:12px">${time}</p>
-  <hr>
-  <table>
-    ${itemsHtml}
-  </table>
-  ${commentBlock}
-  <p class="total">TOTAL: ${formatCurrency(total, currency)}</p>
-  <hr>
-  <p class="center" style="font-size:11px">QRMenu</p>
-</body>
-</html>
-`;
-}
-
 function PosBridgeScreen() {
   const { restaurant } = useRestaurant();
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const [enabled, setEnabled] = useState(false);
   const [enabledLoaded, setEnabledLoaded] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [picking, setPicking] = useState(false);
+  const [printer, setPrinter] = useState<SavedPrinter | null>(null);
   const [lastPrinted, setLastPrinted] = useState<string | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
   const [lastEvent, setLastEvent] = useState<string | null>(null);
   const [activityLog, setActivityLog] = useState<string[]>([]);
   const [printedIds, setPrintedIds] = useState<Set<string>>(new Set());
   const printedIdsRef = useRef<Set<string>>(new Set());
+  const printerUrlRef = useRef<string | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const loadPrintedIds = useCallback(async () => {
@@ -123,12 +69,17 @@ function PosBridgeScreen() {
   const printOrder = useCallback(
     async (order: Order) => {
       if (!restaurant?.name) return;
+      if (Platform.OS === "ios" && !printerUrlRef.current) {
+        setLastError(t("posBridgeNeedPrinter"));
+        return;
+      }
       try {
-        const html = buildReceiptHtml(order, restaurant.name, restaurant.currency ?? "USD");
-        await Print.printAsync({
-          html,
-          printerUrl: undefined, // Use default/system printer
-        });
+        await printOrderTicket(
+          order,
+          restaurant.name,
+          restaurant.currency ?? "USD",
+          printerUrlRef.current
+        );
         const time = new Date().toLocaleTimeString();
         setLastPrinted(`Order #${order.order_number ?? order.id} at ${time}`);
         setLastError(null);
@@ -140,7 +91,7 @@ function PosBridgeScreen() {
         setActivityLog((prev) => [...prev.slice(-19), `[${new Date().toLocaleTimeString()}] Print error: ${msg}`]);
       }
     },
-    [restaurant?.name, markPrinted]
+    [restaurant?.name, restaurant?.currency, markPrinted, t]
   );
 
   const fetchAndPrint = useCallback(
@@ -165,6 +116,10 @@ function PosBridgeScreen() {
 
   useEffect(() => {
     loadPrintedIds();
+    loadSavedPrinter().then((saved) => {
+      setPrinter(saved);
+      printerUrlRef.current = saved?.url ?? null;
+    });
   }, [loadPrintedIds]);
 
   useEffect(() => {
@@ -248,14 +203,33 @@ function PosBridgeScreen() {
     return () => clearInterval(id);
   }, [enabled, restaurant?.id, fetchAndPrint]);
 
-  const toggleEnabled = (value: boolean) => {
+  const handleChoosePrinter = useCallback(async () => {
+    setPicking(true);
+    setLastError(null);
+    const picked = await pickPrinter();
+    setPicking(false);
+    if (!picked) return;
+    setPrinter(picked);
+    printerUrlRef.current = picked.url;
+  }, []);
+
+  const toggleEnabled = async (value: boolean) => {
+    if (value && Platform.OS === "ios" && !printerUrlRef.current) {
+      const picked = await pickPrinter();
+      if (!picked) {
+        setLastError(t("posBridgeNeedPrinter"));
+        return;
+      }
+      setPrinter(picked);
+      printerUrlRef.current = picked.url;
+    }
     saveEnabled(value);
     if (!value) setLastError(null);
   };
 
   const handleTestPrint = async () => {
     if (!restaurant?.id || !restaurant?.name) {
-      setLastError("Restaurant not loaded");
+      setLastError(t("posBridgeRestaurantMissing"));
       return;
     }
     setTesting(true);
@@ -303,14 +277,34 @@ function PosBridgeScreen() {
         <Card style={{ backgroundColor: colors.surface, borderColor: colors.containerBorder }}>
           <CardHeader>
             <Ionicons name="print-outline" size={28} color={colors.sidebarOrange} />
-            <CardTitle style={{ color: colors.text }}>Print orders automatically</CardTitle>
+            <CardTitle style={{ color: colors.text }}>{t("posBridgeAutoTitle")}</CardTitle>
           </CardHeader>
           <CardDescription style={{ color: colors.textMuted }}>
-            When enabled, accepted orders are printed to the device's default printer. Connect a
-            Bluetooth or network printer in system settings first.
+            {t("posBridgeAutoDesc")}
           </CardDescription>
+          {Platform.OS === "ios" ? (
+            <TestButton
+              onPress={handleChoosePrinter}
+              disabled={picking}
+              style={{ backgroundColor: colors.surface, borderColor: colors.containerBorder, marginTop: 0, marginBottom: 16 }}
+            >
+              {picking ? (
+                <ActivityIndicator size="small" color={colors.sidebarOrange} />
+              ) : (
+                <>
+                  <Ionicons name="print-outline" size={18} color={colors.sidebarOrange} />
+                  <Text style={{ color: colors.sidebarOrange, fontWeight: "600", marginLeft: 8 }}>
+                    {printer ? t("posBridgeChangePrinter") : t("posBridgeChoosePrinter")}
+                  </Text>
+                </>
+              )}
+            </TestButton>
+          ) : null}
+          <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 16 }}>
+            {printer ? printer.name : t("posBridgeNoPrinter")}
+          </Text>
           <ToggleRow>
-            <Text style={{ color: colors.text, fontSize: 16, fontWeight: "600" }}>Enabled</Text>
+            <Text style={{ color: colors.text, fontSize: 16, fontWeight: "600" }}>{t("posBridgeEnabled")}</Text>
             <Switch
               value={enabled}
               onValueChange={toggleEnabled}
@@ -327,7 +321,7 @@ function PosBridgeScreen() {
             <StatusRow>
               <Ionicons name="radio-outline" size={20} color="#22c55e" />
               <Text style={{ color: colors.text, marginLeft: 8 }}>
-                Listening for accepted orders
+                {t("posBridgeListening")}
               </Text>
             </StatusRow>
             {lastEvent && (
@@ -354,7 +348,7 @@ function PosBridgeScreen() {
               ) : (
                 <>
                   <Ionicons name="print" size={18} color={colors.sidebarOrange} />
-                  <Text style={{ color: colors.sidebarOrange, fontWeight: "600", marginLeft: 8 }}>Test print</Text>
+                  <Text style={{ color: colors.sidebarOrange, fontWeight: "600", marginLeft: 8 }}>{t("posBridgeTestPrint")}</Text>
                 </>
               )}
             </TestButton>
@@ -378,9 +372,7 @@ function PosBridgeScreen() {
         <HintCard style={{ backgroundColor: colors.surface, borderColor: colors.containerBorder }}>
           <Ionicons name="information-circle-outline" size={22} color={colors.textMuted} />
           <HintText style={{ color: colors.textMuted }}>
-            Keep this screen open for automatic printing. When you accept an order (admin or
-            mobile Orders), "Last event" should update, then the receipt prints. If events don't
-            appear, enable Realtime for the orders table in Supabase (Database → Replication).
+            {Platform.OS === "ios" ? t("posBridgeHintIos") : t("posBridgeHintAndroid")}
           </HintText>
         </HintCard>
       </ScrollView>
